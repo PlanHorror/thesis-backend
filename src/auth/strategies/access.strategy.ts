@@ -14,12 +14,12 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'access') {
       jwtFromRequest: (req: Request) => {
         let token = null;
         if (req && req.cookies) {
-          token = req.cookies['access_token'];
+          token = req.cookies['accessToken'];
         }
         return token;
       },
       ignoreExpiration: false,
-      secretOrKey: process.env.ACCESS_TOKEN_SECRET!,
+      secretOrKey: process.env.ACCESS_TOKEN || 'defaultSecret',
     });
   }
 
