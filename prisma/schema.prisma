@@ -16,14 +16,11 @@ datasource db {
 }
         
 
-enum Role {
-  STUDENT
-  TEACHER
-  ADMIN
-}
 
-model User {
+model Student {
   id        String   @id @default(cuid())
+  department Department @relation("DepartmentStudents", fields: [departmentId], references: [id])
+  departmentId String
   email     String   @unique
   username  String   @unique
   password  String
@@ -31,6 +28,33 @@ model User {
   gender    Boolean?
   birthDate String?
   citizenId String?  @unique
+  phone     String?  @unique
   address   String?
-  role      Role     @default(STUDENT)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  fullName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departmentHeads Department[] @relation("DepartmentHead")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  head       Teacher? @relation("DepartmentHead", fields: [headId], references: [id])
+  headId     String?
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  students    Student[]  @relation("DepartmentStudents")
 }
