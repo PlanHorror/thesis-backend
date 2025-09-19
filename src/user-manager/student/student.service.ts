@@ -93,16 +93,22 @@ export class StudentService {
               error.meta.target.includes('username')
             ) {
               this.logger.warn(
-                `Email ${data['email']} and Username ${data['username']} already exist`,
+                `Email ${
+                  typeof data.email === 'string' ? data.email : ''
+                } and Username ${typeof data.username === 'string' ? data.username : ''} already exist`,
               );
               throw new ConflictException('Email and username already exist');
             }
             if (error.meta.target.includes('email')) {
-              this.logger.warn(`Email ${data['email']} already exists`);
+              this.logger.warn(
+                `Email ${typeof data.email === 'string' ? data.email : ''} already exists`,
+              );
               throw new ConflictException('Email already exists');
             }
             if (error.meta.target.includes('username')) {
-              this.logger.warn(`Username ${data['username']} already exists`);
+              this.logger.warn(
+                `Username ${typeof data.username === 'string' ? data.username : ''} already exists`,
+              );
               throw new ConflictException('Username already exists');
             }
           } else {
