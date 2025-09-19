@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Student } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -13,15 +13,19 @@ export class StudentService {
   private readonly logger = new Logger(StudentService.name);
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findAll() {
+  async findAll(): Promise<Student[]> {
     return this.prismaService.student.findMany();
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<Student> {
     try {
-      return await this.prismaService.student.findUnique({
+      const student = await this.prismaService.student.findUnique({
         where: { id },
       });
+      if (!student) {
+        throw new NotFoundException('Account not found');
+      }
+      return student;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
@@ -34,7 +38,7 @@ export class StudentService {
     }
   }
 
-  async create(data: Prisma.StudentCreateInput) {
+  async create(data: Prisma.StudentCreateInput): Promise<Student> {
     try {
       return await this.prismaService.student.create({
         data,
@@ -74,7 +78,7 @@ export class StudentService {
     }
   }
 
-  async update(id: string, data: Prisma.StudentUpdateInput) {
+  async update(id: string, data: Prisma.StudentUpdateInput): Promise<Student> {
     try {
       return await this.prismaService.student.update({
         where: { id },
@@ -111,13 +115,7 @@ export class StudentService {
               );
               throw new ConflictException('Username already exists');
             }
-          } else {
-            this.logger.error('Failed to update account', error.stack);
-            throw new BadRequestException('Failed to update account');
           }
-        } else {
-          this.logger.error('Failed to update account', error.stack);
-          throw new BadRequestException('Failed to update account');
         }
       }
       this.logger.error('Failed to update account', error.stack);
