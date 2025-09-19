@@ -27,12 +27,36 @@ export class TeacherService {
       }
       return teacher;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          this.logger.warn(`Teacher with ID ${id} not found`);
-          throw new NotFoundException('Teacher not found');
-        }
+      this.logger.error('Failed to retrieve teacher', error.stack);
+      throw new NotFoundException('Teacher not found');
+    }
+  }
+
+  async findByEmail(email: string) {
+    try {
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { email },
+      });
+      if (!teacher) {
+        throw new NotFoundException('Teacher not found');
       }
+      return teacher;
+    } catch (error) {
+      this.logger.error('Failed to retrieve teacher', error.stack);
+      throw new NotFoundException('Teacher not found');
+    }
+  }
+
+  async findByUsername(username: string) {
+    try {
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { username },
+      });
+      if (!teacher) {
+        throw new NotFoundException('Teacher not found');
+      }
+      return teacher;
+    } catch (error) {
       this.logger.error('Failed to retrieve teacher', error.stack);
       throw new NotFoundException('Teacher not found');
     }

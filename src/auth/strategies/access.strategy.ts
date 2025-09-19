@@ -19,7 +19,7 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'access') {
         return token;
       },
       ignoreExpiration: false,
-      secretOrKey: process.env.ACCESS_TOKEN || 'defaultSecret',
+      secretOrKey: process.env.JWT_SECRET || 'defaultSecret',
     });
   }
 

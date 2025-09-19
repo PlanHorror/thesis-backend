@@ -26,12 +26,21 @@ export class AdminService {
       }
       return admin;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          this.logger.warn(`Admin with ID ${id} not found`);
-          throw new NotFoundException('Admin not found');
-        }
+      this.logger.error('Failed to retrieve admin', error.stack);
+      throw new NotFoundException('Admin not found');
+    }
+  }
+
+  async findByUsername(username: string): Promise<Admin> {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { username },
+      });
+      if (!admin) {
+        throw new NotFoundException('Admin not found');
       }
+      return admin;
+    } catch (error) {
       this.logger.error('Failed to retrieve admin', error.stack);
       throw new NotFoundException('Admin not found');
     }
@@ -41,12 +50,6 @@ export class AdminService {
     try {
       return await this.prisma.admin.create({ data });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          this.logger.warn(`Username ${data.username} already exists`);
-          throw new ConflictException('Username already exists');
-        }
-      }
       this.logger.error('Failed to create admin', error.stack);
       throw new NotFoundException('Failed to create admin');
     }

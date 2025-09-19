@@ -27,12 +27,6 @@ export class StudentService {
       }
       return student;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          this.logger.warn(`Account with ID ${id} not found`);
-          throw new NotFoundException('Account not found');
-        }
-      }
       this.logger.error('Failed to retrieve account', error.stack);
       throw new NotFoundException('Account not found');
     }
@@ -64,17 +58,41 @@ export class StudentService {
               this.logger.warn(`Username ${data.username} already exists`);
               throw new ConflictException('Username already exists');
             }
-          } else {
-            this.logger.error('Failed to create account', error.stack);
-            throw new BadRequestException('Failed to create account');
           }
-        } else {
-          this.logger.error('Failed to create account', error.stack);
-          throw new BadRequestException('Failed to create account');
         }
       }
       this.logger.error('Failed to create account', error.stack);
       throw new BadRequestException('Failed to create account');
+    }
+  }
+
+  async findByEmail(email: string): Promise<Student> {
+    try {
+      const student = await this.prismaService.student.findUnique({
+        where: { email },
+      });
+      if (!student) {
+        throw new NotFoundException('Account not found');
+      }
+      return student;
+    } catch (error) {
+      this.logger.error('Failed to retrieve account', error.stack);
+      throw new NotFoundException('Account not found');
+    }
+  }
+
+  async findByUsername(username: string): Promise<Student> {
+    try {
+      const student = await this.prismaService.student.findUnique({
+        where: { username },
+      });
+      if (!student) {
+        throw new NotFoundException('Account not found');
+      }
+      return student;
+    } catch (error) {
+      this.logger.error('Failed to retrieve account', error.stack);
+      throw new NotFoundException('Account not found');
     }
   }
 

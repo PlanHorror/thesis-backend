@@ -1,36 +1,28 @@
-import { Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AdminRegisterDto, SigninDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('admin/register')
-  async adminRegister() {
-    // Admin registration logic
+  async adminRegister(@Body() data: AdminRegisterDto) {
+    return this.authService.adminRegister(data);
   }
 
-  @Post('student/register')
-  async studentRegister() {
-    // Student registration logic
+  @Post('admin/signin')
+  async adminSignin(@Body() data: SigninDto) {
+    return this.authService.adminSignin(data);
   }
 
-  @Post('teacher/register')
-  async teacherRegister() {
-    // Teacher registration logic
+  @Post('student/signin')
+  async studentSignin(@Body() data: SigninDto) {
+    return this.authService.studentSignin(data);
   }
 
-  @Post('admin/login')
-  async adminLogin() {
-    // Admin login logic
-  }
-
-  @Post('student/login')
-  async studentLogin() {
-    // Student login logic
-  }
-
-  @Post('teacher/login') async teacherLogin() {
-    // Teacher login logic
+  @Post('teacher/signin')
+  async teacherSignin(@Body() data: SigninDto) {
+    return this.authService.teacherSignin(data);
   }
 }
