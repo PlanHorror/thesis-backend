@@ -1,14 +1,13 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "public"."Admin" (
+    "id" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropTable
-DROP TABLE "public"."User";
-
--- DropEnum
-DROP TYPE "public"."Role";
+    CONSTRAINT "Admin_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "public"."Student" (
@@ -17,6 +16,7 @@ CREATE TABLE "public"."Student" (
     "email" TEXT NOT NULL,
     "username" TEXT NOT NULL,
     "password" TEXT NOT NULL,
+    "studentId" TEXT,
     "fullName" TEXT,
     "gender" BOOLEAN,
     "birthDate" TEXT,
@@ -56,10 +56,16 @@ CREATE TABLE "public"."Department" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Admin_username_key" ON "public"."Admin"("username");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Student_email_key" ON "public"."Student"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Student_username_key" ON "public"."Student"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Student_studentId_key" ON "public"."Student"("studentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Student_citizenId_key" ON "public"."Student"("citizenId");
