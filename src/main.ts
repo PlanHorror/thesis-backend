@@ -11,14 +11,13 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.useLogger(Logger);
+  app.useLogger(new Logger());
   app.enableCors({
     origin: '*',
   });
   app.setGlobalPrefix('api');
+  Logger.log(`Application is running on: ${process.env.PORT ?? 3000}`);
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap().catch((err) => {
-  Logger.error(err);
-});
+void bootstrap();

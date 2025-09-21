@@ -25,7 +25,7 @@ export class AuthService {
     });
   }
 
-  async adminRegister(data: AdminRegisterDto) {
+  async adminSignup(data: AdminRegisterDto) {
     const { password, confirmPassword, ...rest } = data;
     if (password !== confirmPassword) {
       throw new BadRequestException('Passwords do not match');

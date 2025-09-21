@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -6,11 +7,17 @@ import {
 } from '@nestjs/common';
 import { Admin, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { StudentService } from 'src/user-manager/student/student.service';
+import { TeacherService } from 'src/user-manager/teacher/teacher.service';
 
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly studentService: StudentService,
+    private readonly teacherService: TeacherService,
+  ) {}
 
   async findAll(): Promise<Admin[]> {
     return this.prisma.admin.findMany();
@@ -50,8 +57,14 @@ export class AdminService {
     try {
       return await this.prisma.admin.create({ data });
     } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          this.logger.warn(`Username ${data.username} already exists`);
+          throw new ConflictException('Username already exists');
+        }
+      }
       this.logger.error('Failed to create admin', error.stack);
-      throw new NotFoundException('Failed to create admin');
+      throw new BadRequestException('Failed to create admin');
     }
   }
 
@@ -72,7 +85,7 @@ export class AdminService {
         }
       }
       this.logger.error('Failed to update admin', error.stack);
-      throw new NotFoundException('Failed to update admin');
+      throw new BadRequestException('Failed to update admin');
     }
   }
 
@@ -87,7 +100,7 @@ export class AdminService {
         }
       }
       this.logger.error('Failed to delete admin', error.stack);
-      throw new NotFoundException('Failed to delete admin');
+      throw new BadRequestException('Failed to delete admin');
     }
   }
 }
