@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Admin, Student, Teacher } from '@prisma/client';
+import { Admin, Student, Lecturer } from '@prisma/client';
 import { Role } from 'common';
 import { AccountPayload } from 'common/interface/account.interface';
 import { Request } from 'express';
@@ -25,7 +25,7 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'access') {
 
   async validate(
     payload: AccountPayload,
-  ): Promise<(Admin | Student | Teacher) & { role: Role }> {
+  ): Promise<(Admin | Student | Lecturer) & { role: Role }> {
     if (!payload) {
       throw new UnauthorizedException('Invalid token');
     }
@@ -50,14 +50,14 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'access') {
         throw new UnauthorizedException('Account invalid');
       }
       return { ...student, role };
-    } else if (role === Role.TEACHER && email) {
-      const teacher = await this.prismaService.teacher.findUnique({
+    } else if (role === Role.LECTURER && email) {
+      const lecturer = await this.prismaService.lecturer.findUnique({
         where: { id, email },
       });
-      if (!teacher || !teacher.active) {
+      if (!lecturer || !lecturer.active) {
         throw new UnauthorizedException('Account invalid');
       }
-      return { ...teacher, role };
+      return { ...lecturer, role };
     } else {
       throw new UnauthorizedException('Invalid token');
     }

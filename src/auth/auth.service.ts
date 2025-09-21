@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { AdminService } from 'src/admin/admin.service';
 import { StudentService } from 'src/user-manager/student/student.service';
-import { TeacherService } from 'src/user-manager/teacher/teacher.service';
+import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
 import { AdminRegisterDto, SigninDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -16,7 +16,7 @@ export class AuthService {
   constructor(
     private readonly adminService: AdminService,
     private readonly studentService: StudentService,
-    private readonly teacherService: TeacherService,
+    private readonly lecturerService: LecturerService,
   ) {}
 
   generateToken(payload: AccountPayload): string {
@@ -74,19 +74,19 @@ export class AuthService {
     }
   }
 
-  async teacherSignin(data: SigninDto) {
+  async lecturerSignin(data: SigninDto) {
     try {
-      const teacher = await this.teacherService.findByUsername(data.username);
-      if (!(await bcrypt.compare(data.password, teacher.password))) {
+      const lecturer = await this.lecturerService.findByUsername(data.username);
+      if (!(await bcrypt.compare(data.password, lecturer.password))) {
         throw new UnauthorizedException('Invalid credentials');
       }
-      if (!teacher.active) {
+      if (!lecturer.active) {
         throw new UnauthorizedException('Account is inactive');
       }
       const token = this.generateToken({
-        id: teacher.id,
-        role: Role.TEACHER,
-        email: teacher.email,
+        id: lecturer.id,
+        role: Role.LECTURER,
+        email: lecturer.email,
       });
       return { token };
     } catch (error) {

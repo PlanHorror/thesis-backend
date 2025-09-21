@@ -9,62 +9,62 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class TeacherService {
-  private logger = new Logger(TeacherService.name);
+export class LecturerService {
+  private logger = new Logger(LecturerService.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll() {
-    return this.prisma.teacher.findMany();
+    return this.prisma.lecturer.findMany();
   }
 
   async findOne(id: string) {
     try {
-      const teacher = await this.prisma.teacher.findUnique({
+      const lecturer = await this.prisma.lecturer.findUnique({
         where: { id },
       });
-      if (!teacher) {
-        throw new NotFoundException('Teacher not found');
+      if (!lecturer) {
+        throw new NotFoundException('Lecturer not found');
       }
-      return teacher;
+      return lecturer;
     } catch (error) {
-      this.logger.error('Failed to retrieve teacher', error.stack);
-      throw new NotFoundException('Teacher not found');
+      this.logger.error('Failed to retrieve lecturer', error.stack);
+      throw new NotFoundException('Lecturer not found');
     }
   }
 
   async findByEmail(email: string) {
     try {
-      const teacher = await this.prisma.teacher.findUnique({
+      const lecturer = await this.prisma.lecturer.findUnique({
         where: { email },
       });
-      if (!teacher) {
-        throw new NotFoundException('Teacher not found');
+      if (!lecturer) {
+        throw new NotFoundException('Lecturer not found');
       }
-      return teacher;
+      return lecturer;
     } catch (error) {
-      this.logger.error('Failed to retrieve teacher', error.stack);
-      throw new NotFoundException('Teacher not found');
+      this.logger.error('Failed to retrieve lecturer', error.stack);
+      throw new NotFoundException('Lecturer not found');
     }
   }
 
   async findByUsername(username: string) {
     try {
-      const teacher = await this.prisma.teacher.findUnique({
+      const lecturer = await this.prisma.lecturer.findUnique({
         where: { username },
       });
-      if (!teacher) {
-        throw new NotFoundException('Teacher not found');
+      if (!lecturer) {
+        throw new NotFoundException('Lecturer not found');
       }
-      return teacher;
+      return lecturer;
     } catch (error) {
-      this.logger.error('Failed to retrieve teacher', error.stack);
-      throw new NotFoundException('Teacher not found');
+      this.logger.error('Failed to retrieve lecturer', error.stack);
+      throw new NotFoundException('Lecturer not found');
     }
   }
 
-  async create(data: Prisma.TeacherCreateInput) {
+  async create(data: Prisma.LecturerCreateInput) {
     try {
-      return await this.prisma.teacher.create({
+      return await this.prisma.lecturer.create({
         data,
       });
     } catch (error) {
@@ -91,22 +91,22 @@ export class TeacherService {
           }
         }
       }
-      this.logger.error('Failed to create teacher', error.stack);
-      throw new BadRequestException('Failed to create teacher');
+      this.logger.error('Failed to create ', error.stack);
+      throw new BadRequestException('Failed to create ');
     }
   }
 
-  async update(id: string, data: Prisma.TeacherUpdateInput) {
+  async update(id: string, data: Prisma.LecturerUpdateInput) {
     try {
-      return await this.prisma.teacher.update({
+      return await this.prisma.lecturer.update({
         where: { id },
         data,
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          this.logger.warn(`Teacher with ID ${id} not found`);
-          throw new NotFoundException('Teacher not found');
+          this.logger.warn(` with ID ${id} not found`);
+          throw new NotFoundException(' not found');
         }
         if (error.code === 'P2002') {
           if (Array.isArray(error.meta?.target)) {
@@ -134,26 +134,26 @@ export class TeacherService {
           }
         }
       }
-      this.logger.error('Failed to update teacher', error.stack);
-      throw new BadRequestException('Failed to update teacher');
+      this.logger.error('Failed to update ', error.stack);
+      throw new BadRequestException('Failed to update ');
     }
   }
 
   async delete(id: string) {
     try {
-      await this.prisma.teacher.delete({
+      await this.prisma.lecturer.delete({
         where: { id },
       });
-      return { message: 'Teacher deleted successfully' };
+      return { message: 'Lecturer deleted successfully' };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          this.logger.warn(`Teacher with ID ${id} not found`);
-          throw new NotFoundException('Teacher not found');
+          this.logger.warn(`Lecturer with ID ${id} not found`);
+          throw new NotFoundException('Lecturer not found');
         }
       }
-      this.logger.error('Failed to delete teacher', error.stack);
-      throw new BadRequestException('Failed to delete teacher');
+      this.logger.error('Failed to delete lecturer', error.stack);
+      throw new BadRequestException('Failed to delete lecturer');
     }
   }
 }

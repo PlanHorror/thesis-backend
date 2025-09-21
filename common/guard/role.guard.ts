@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext } from '@nestjs/common';
-import { Student, Teacher, Admin } from '@prisma/client';
+import { Student, Lecturer, Admin } from '@prisma/client';
 import { Role } from 'common';
 import { Request } from 'express';
 
@@ -10,7 +10,7 @@ export class RoleGuard implements CanActivate {
     const user = context
       .switchToHttp()
       .getRequest<
-        Request & { user: (Admin | Student | Teacher) & { role: Role } }
+        Request & { user: (Admin | Student | Lecturer) & { role: Role } }
       >().user;
     return user && user.role && this.requiredRoles.includes(user.role);
   }

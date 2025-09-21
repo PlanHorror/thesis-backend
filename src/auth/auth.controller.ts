@@ -21,8 +21,8 @@ export class AuthController {
     return this.authService.studentSignin(data);
   }
 
-  @Post('teacher/signin')
-  async teacherSignin(@Body() data: SigninDto) {
-    return this.authService.teacherSignin(data);
+  @Post('lecturer/signin')
+  async lecturerSignin(@Body() data: SigninDto) {
+    return this.authService.lecturerSignin(data);
   }
 }

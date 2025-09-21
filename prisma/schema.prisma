@@ -46,7 +46,7 @@ model Student {
   updatedAt DateTime @updatedAt
 }
 
-model Teacher {
+model Lecturer {
   id        String   @id @default(cuid())
   email     String   @unique
   username  String   @unique
@@ -61,7 +61,7 @@ model Teacher {
 
 model Department {
   id          String   @id @default(cuid())
-  head       Teacher? @relation("DepartmentHead", fields: [headId], references: [id])
+  head       Lecturer? @relation("DepartmentHead", fields: [headId], references: [id])
   headId     String?
   name        String
   description String?

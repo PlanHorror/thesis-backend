@@ -8,7 +8,7 @@ import {
 import { Admin, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentService } from 'src/user-manager/student/student.service';
-import { TeacherService } from 'src/user-manager/teacher/teacher.service';
+import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
 
 @Injectable()
 export class AdminService {
@@ -16,7 +16,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly studentService: StudentService,
-    private readonly teacherService: TeacherService,
+    private readonly lecturerService: LecturerService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -103,4 +103,6 @@ export class AdminService {
       throw new BadRequestException('Failed to delete admin');
     }
   }
+
+  async createStudentAccountService() {}
 }
