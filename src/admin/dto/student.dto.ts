@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -8,6 +8,7 @@ import {
   IsPhoneNumber,
   IsString,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 
 export class CreateStudentDto {
@@ -63,6 +64,16 @@ export class CreateStudentDto {
   address: string;
 }
 
+export class CreateMultipleStudentsByDepartmentDto {
+  @IsString()
+  @IsNotEmpty()
+  departmentId: string;
+
+  @ValidateNested({ each: true })
+  @Type(() => CreateStudentDto)
+  students: CreateStudentDto[];
+}
+
 export class UpdateStudentDto {
   @IsString()
   @IsNotEmpty()
@@ -78,11 +89,6 @@ export class UpdateStudentDto {
   @IsNotEmpty()
   @IsOptional()
   username: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @IsOptional()
-  oldPassword: string;
 
   @IsString()
   @IsNotEmpty()

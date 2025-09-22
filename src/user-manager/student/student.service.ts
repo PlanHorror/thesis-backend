@@ -67,6 +67,21 @@ export class StudentService {
     }
   }
 
+  async findByUsername(username: string): Promise<Student> {
+    try {
+      const student = await this.prismaService.student.findUnique({
+        where: { username },
+      });
+      if (!student) {
+        throw new NotFoundException('Account not found');
+      }
+      return student;
+    } catch (error) {
+      this.logger.error('Failed to retrieve account', error.stack);
+      throw new NotFoundException('Account not found');
+    }
+  }
+
   async create(data: Prisma.StudentCreateInput): Promise<Student> {
     try {
       return await this.prismaService.student.create({
@@ -101,18 +116,18 @@ export class StudentService {
     }
   }
 
-  async findByUsername(username: string): Promise<Student> {
+  async createMultipleStudentsByDepartment(
+    data: Prisma.StudentCreateManyInput[],
+  ): Promise<{ message: string }> {
     try {
-      const student = await this.prismaService.student.findUnique({
-        where: { username },
+      await this.prismaService.student.createMany({
+        data: data,
+        skipDuplicates: true,
       });
-      if (!student) {
-        throw new NotFoundException('Account not found');
-      }
-      return student;
+      return { message: 'Students created successfully' };
     } catch (error) {
-      this.logger.error('Failed to retrieve account', error.stack);
-      throw new NotFoundException('Account not found');
+      this.logger.error('Failed to create students', error.stack);
+      throw new BadRequestException('Failed to create students');
     }
   }
 
@@ -175,6 +190,23 @@ export class StudentService {
       }
       this.logger.error('Failed to delete account', error.stack);
       throw new BadRequestException('Failed to delete account');
+    }
+  }
+
+  async deleteMany(ids: string[]): Promise<{ message: string }> {
+    try {
+      await this.prismaService.student.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return { message: 'Accounts deleted successfully' };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('One or more accounts not found');
+        }
+      }
+      this.logger.error('Failed to delete accounts', error.stack);
+      throw new BadRequestException('Failed to delete accounts');
     }
   }
 }

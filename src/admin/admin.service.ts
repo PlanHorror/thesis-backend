@@ -5,11 +5,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Admin, Prisma } from '@prisma/client';
+import { Admin, Department, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentService } from 'src/user-manager/student/student.service';
 import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
-import { CreateStudentDto } from './dto/student.dto';
+import {
+  CreateMultipleStudentsByDepartmentDto,
+  CreateStudentDto,
+  UpdateStudentDto,
+} from './dto/student.dto';
 import { DepartmentService } from 'src/department/department.service';
 import * as bcrypt from 'bcrypt';
 import {
@@ -32,7 +36,7 @@ export class AdminService {
     return this.prisma.admin.findMany();
   }
 
-  async findOne(id: string): Promise<Admin> {
+  async findById(id: string): Promise<Admin> {
     try {
       const admin = await this.prisma.admin.findUnique({
         where: { id },
@@ -117,35 +121,108 @@ export class AdminService {
    * Admin services methods for managing departments
    */
 
-  async getAllDepartmentsService() {
-    return this.departmentService.findAll();
+  async getAllDepartmentsService(): Promise<Department[]> {
+    return await this.departmentService.findAll();
   }
 
-  async getDepartmentByIdService(id: string) {
-    return this.departmentService.findOne(id);
+  async getDepartmentByIdService(id: string): Promise<Department> {
+    return await this.departmentService.findById(id);
   }
 
-  async createDepartmentService(data: CreateDepartmentDto) {
-    return this.departmentService.create(data);
+  async createDepartmentService(
+    data: CreateDepartmentDto,
+  ): Promise<Department> {
+    return await this.departmentService.create(data);
   }
 
   async createMultipleDepartmentsService(data: CreateMultipleDepartmentsDto) {
-    return this.departmentService.createMany(data.departments);
+    return await this.departmentService.createMany(data.departments);
   }
 
   async updateDepartmentService(id: string, data: UpdateDepartmentDto) {
-    return this.departmentService.update(id, data);
+    return await this.departmentService.update(id, data);
   }
 
   async deleteDepartmentService(id: string) {
-    return this.departmentService.remove(id);
+    return await this.departmentService.delete(id);
   }
 
   async deleteMultipleDepartmentsService(ids: string[]) {
-    return this.departmentService.removeMany(ids);
+    return await this.departmentService.deleteMany(ids);
   }
 
   /*
    * Admin services methods for managing students
+   */
+
+  async getAllStudentAccountsService() {
+    return await this.studentService.findAll();
+  }
+
+  async getStudentAccountByIdService(id: string) {
+    return await this.studentService.findById(id);
+  }
+
+  async getStudentByDepartmentIdService(departmentId: string) {
+    return await this.studentService.filterByDepartment(departmentId);
+  }
+
+  async createStudentAccountService(data: CreateStudentDto) {
+    const { departmentId, ...studentData } = data;
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(studentData.password, salt);
+    studentData.password = hashedPassword;
+    return await this.studentService.create({
+      ...studentData,
+      department: { connect: { id: departmentId } },
+    });
+  }
+
+  async createMultipleStudentAccountsByDepartmentService(
+    data: CreateMultipleStudentsByDepartmentDto,
+  ) {
+    return await this.studentService.createMultipleStudentsByDepartment(
+      data.students.map((student) => ({
+        ...student,
+        departmentId: data.departmentId,
+      })),
+    );
+  }
+
+  async updateStudentAccountService(id: string, data: UpdateStudentDto) {
+    const {
+      departmentId,
+
+      newPassword,
+      confirmPassword,
+      ...studentData
+    } = data;
+    let password: string | undefined = undefined;
+    if (newPassword && confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException(
+          'New password and confirm password do not match',
+        );
+      }
+      const salt = await bcrypt.genSalt();
+      password = await bcrypt.hash(newPassword, salt);
+    }
+    return await this.studentService.update(id, {
+      ...studentData,
+      ...(password && { password }),
+      ...(departmentId && { department: { connect: { id: departmentId } } }),
+    });
+  }
+
+  async deleteStudentAccountService(id: string) {
+    return await this.studentService.delete(id);
+  }
+
+  async deleteMultipleStudentAccountsService(ids: string[]) {
+    return await this.studentService.deleteMany(ids);
+  }
+
+  /*
+   * Admin services methods for managing lecturers
    */
 }
