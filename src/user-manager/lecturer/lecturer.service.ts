@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Lecturer, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -13,11 +13,11 @@ export class LecturerService {
   private logger = new Logger(LecturerService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(): Promise<Lecturer[]> {
     return this.prisma.lecturer.findMany();
   }
 
-  async findOne(id: string) {
+  async findById(id: string): Promise<Lecturer> {
     try {
       const lecturer = await this.prisma.lecturer.findUnique({
         where: { id },
@@ -32,7 +32,7 @@ export class LecturerService {
     }
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<Lecturer> {
     try {
       const lecturer = await this.prisma.lecturer.findUnique({
         where: { email },
@@ -47,7 +47,7 @@ export class LecturerService {
     }
   }
 
-  async findByUsername(username: string) {
+  async findByUsername(username: string): Promise<Lecturer> {
     try {
       const lecturer = await this.prisma.lecturer.findUnique({
         where: { username },
@@ -62,7 +62,7 @@ export class LecturerService {
     }
   }
 
-  async create(data: Prisma.LecturerCreateInput) {
+  async create(data: Prisma.LecturerCreateInput): Promise<Lecturer> {
     try {
       return await this.prisma.lecturer.create({
         data,
@@ -96,7 +96,10 @@ export class LecturerService {
     }
   }
 
-  async update(id: string, data: Prisma.LecturerUpdateInput) {
+  async update(
+    id: string,
+    data: Prisma.LecturerUpdateInput,
+  ): Promise<Lecturer> {
     try {
       return await this.prisma.lecturer.update({
         where: { id },
@@ -139,12 +142,11 @@ export class LecturerService {
     }
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<Lecturer> {
     try {
-      await this.prisma.lecturer.delete({
+      return await this.prisma.lecturer.delete({
         where: { id },
       });
-      return { message: 'Lecturer deleted successfully' };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {

@@ -32,6 +32,41 @@ export class StudentService {
     }
   }
 
+  async findByCondition(
+    email?: string,
+    studentId?: string,
+    username?: string,
+    citizenId?: string,
+    phone?: string,
+  ): Promise<Student> {
+    if (!email && !studentId && !username && !citizenId && !phone) {
+      throw new BadRequestException('At least one condition is required');
+    }
+    try {
+      const student = await this.prismaService.student.findUnique({
+        where: { email, studentId, username, citizenId, phone },
+      });
+      if (!student) {
+        throw new NotFoundException('Account not found');
+      }
+      return student;
+    } catch (error) {
+      this.logger.error('Failed to retrieve account', error.stack);
+      throw new NotFoundException('Account not found');
+    }
+  }
+
+  async filterByDepartment(departmentId: string): Promise<Student[]> {
+    try {
+      return await this.prismaService.student.findMany({
+        where: { departmentId },
+      });
+    } catch (error) {
+      this.logger.error('Failed to filter accounts', error.stack);
+      throw new BadRequestException('Failed to filter accounts');
+    }
+  }
+
   async create(data: Prisma.StudentCreateInput): Promise<Student> {
     try {
       return await this.prismaService.student.create({
@@ -63,21 +98,6 @@ export class StudentService {
       }
       this.logger.error('Failed to create account', error.stack);
       throw new BadRequestException('Failed to create account');
-    }
-  }
-
-  async findByEmail(email: string): Promise<Student> {
-    try {
-      const student = await this.prismaService.student.findUnique({
-        where: { email },
-      });
-      if (!student) {
-        throw new NotFoundException('Account not found');
-      }
-      return student;
-    } catch (error) {
-      this.logger.error('Failed to retrieve account', error.stack);
-      throw new NotFoundException('Account not found');
     }
   }
 
@@ -141,7 +161,7 @@ export class StudentService {
     }
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<Student> {
     try {
       return await this.prismaService.student.delete({
         where: { id },
