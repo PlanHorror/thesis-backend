@@ -116,7 +116,7 @@ export class StudentService {
     }
   }
 
-  async createMultipleStudentsByDepartment(
+  async createMultipleStudents(
     data: Prisma.StudentCreateManyInput[],
   ): Promise<{ message: string }> {
     try {

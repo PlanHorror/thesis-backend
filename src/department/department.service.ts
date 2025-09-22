@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Department, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -12,11 +12,11 @@ export class DepartmentService {
   private readonly logger = new Logger(DepartmentService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(): Promise<Department[]> {
     return this.prisma.department.findMany();
   }
 
-  async findOne(id: string) {
+  async findById(id: string): Promise<Department> {
     try {
       const department = await this.prisma.department.findUnique({
         where: { id },
@@ -31,7 +31,7 @@ export class DepartmentService {
     }
   }
 
-  async create(data: Prisma.DepartmentCreateInput) {
+  async create(data: Prisma.DepartmentCreateInput): Promise<Department> {
     try {
       return await this.prisma.department.create({
         data,
@@ -42,21 +42,26 @@ export class DepartmentService {
     }
   }
 
-  async createMany(departments: Prisma.DepartmentCreateManyInput[]) {
+  async createMany(
+    departments: Prisma.DepartmentCreateManyInput[],
+  ): Promise<{ message: string }> {
     try {
-      return await this.prisma.department.createMany({
+      await this.prisma.department.createMany({
         data: departments,
         skipDuplicates: true,
       });
+      return { message: 'Departments created successfully' };
     } catch (error) {
       this.logger.error('Failed to create departments', error.stack);
       throw new BadRequestException('Failed to create departments');
     }
   }
 
-  async update(id: string, data: Prisma.DepartmentUpdateInput) {
+  async update(
+    id: string,
+    data: Prisma.DepartmentUpdateInput,
+  ): Promise<Department> {
     try {
-      await this.findOne(id);
       return await this.prisma.department.update({
         where: { id },
         data,
@@ -72,9 +77,8 @@ export class DepartmentService {
     }
   }
 
-  async remove(id: string) {
+  async delete(id: string): Promise<Department> {
     try {
-      await this.findOne(id);
       return await this.prisma.department.delete({
         where: { id },
       });
@@ -89,11 +93,12 @@ export class DepartmentService {
     }
   }
 
-  async removeMany(ids: string[]) {
+  async deleteMany(ids: string[]): Promise<{ message: string }> {
     try {
-      return await this.prisma.department.deleteMany({
+      await this.prisma.department.deleteMany({
         where: { id: { in: ids } },
       });
+      return { message: 'Departments deleted successfully' };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {

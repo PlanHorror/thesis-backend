@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateLecturerDto {
   @IsEmail()
@@ -17,4 +26,43 @@ export class CreateLecturerDto {
   @IsNotEmpty()
   @IsOptional()
   fullName: string;
+}
+
+export class CreateMultipleLecturersDto {
+  @ValidateNested({ each: true })
+  @Type(() => CreateLecturerDto)
+  lecturers: CreateLecturerDto[];
+}
+
+export class UpdateLecturerDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @IsOptional()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  newPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  @ValidateIf((o) => o.newPassword)
+  confirmPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  fullName: string;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  @IsOptional()
+  isActive: boolean;
 }

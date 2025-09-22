@@ -64,11 +64,7 @@ export class CreateStudentDto {
   address: string;
 }
 
-export class CreateMultipleStudentsByDepartmentDto {
-  @IsString()
-  @IsNotEmpty()
-  departmentId: string;
-
+export class CreateMultipleStudentsDto {
   @ValidateNested({ each: true })
   @Type(() => CreateStudentDto)
   students: CreateStudentDto[];

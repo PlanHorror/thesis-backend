@@ -5,12 +5,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Admin, Department, Prisma } from '@prisma/client';
+import { Admin, Department, Lecturer, Prisma, Student } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentService } from 'src/user-manager/student/student.service';
 import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
 import {
-  CreateMultipleStudentsByDepartmentDto,
+  CreateMultipleStudentsDto,
   CreateStudentDto,
   UpdateStudentDto,
 } from './dto/student.dto';
@@ -21,6 +21,11 @@ import {
   CreateMultipleDepartmentsDto,
   UpdateDepartmentDto,
 } from './dto/department.dto';
+import {
+  CreateLecturerDto,
+  CreateMultipleLecturersDto,
+  UpdateLecturerDto,
+} from './dto/lecturer.dto';
 
 @Injectable()
 export class AdminService {
@@ -135,19 +140,26 @@ export class AdminService {
     return await this.departmentService.create(data);
   }
 
-  async createMultipleDepartmentsService(data: CreateMultipleDepartmentsDto) {
+  async createMultipleDepartmentsService(
+    data: CreateMultipleDepartmentsDto,
+  ): Promise<{ message: string }> {
     return await this.departmentService.createMany(data.departments);
   }
 
-  async updateDepartmentService(id: string, data: UpdateDepartmentDto) {
+  async updateDepartmentService(
+    id: string,
+    data: UpdateDepartmentDto,
+  ): Promise<Department> {
     return await this.departmentService.update(id, data);
   }
 
-  async deleteDepartmentService(id: string) {
+  async deleteDepartmentService(id: string): Promise<Department> {
     return await this.departmentService.delete(id);
   }
 
-  async deleteMultipleDepartmentsService(ids: string[]) {
+  async deleteMultipleDepartmentsService(
+    ids: string[],
+  ): Promise<{ message: string }> {
     return await this.departmentService.deleteMany(ids);
   }
 
@@ -155,19 +167,21 @@ export class AdminService {
    * Admin services methods for managing students
    */
 
-  async getAllStudentAccountsService() {
+  async getAllStudentAccountsService(): Promise<Student[]> {
     return await this.studentService.findAll();
   }
 
-  async getStudentAccountByIdService(id: string) {
+  async getStudentAccountByIdService(id: string): Promise<Student> {
     return await this.studentService.findById(id);
   }
 
-  async getStudentByDepartmentIdService(departmentId: string) {
+  async getStudentByDepartmentIdService(
+    departmentId: string,
+  ): Promise<Student[]> {
     return await this.studentService.filterByDepartment(departmentId);
   }
 
-  async createStudentAccountService(data: CreateStudentDto) {
+  async createStudentAccountService(data: CreateStudentDto): Promise<Student> {
     const { departmentId, ...studentData } = data;
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(studentData.password, salt);
@@ -178,18 +192,25 @@ export class AdminService {
     });
   }
 
-  async createMultipleStudentAccountsByDepartmentService(
-    data: CreateMultipleStudentsByDepartmentDto,
-  ) {
-    return await this.studentService.createMultipleStudentsByDepartment(
-      data.students.map((student) => ({
-        ...student,
-        departmentId: data.departmentId,
-      })),
+  async createMultipleStudentAccountsService(
+    data: CreateMultipleStudentsDto,
+  ): Promise<{ message: string }> {
+    return await this.studentService.createMultipleStudents(
+      data.students.map((student) => {
+        const { password, ...studentData } = student;
+        return {
+          ...studentData,
+          password: bcrypt.hashSync(password, bcrypt.genSaltSync()),
+          department: { connect: { id: student.departmentId } },
+        };
+      }),
     );
   }
 
-  async updateStudentAccountService(id: string, data: UpdateStudentDto) {
+  async updateStudentAccountService(
+    id: string,
+    data: UpdateStudentDto,
+  ): Promise<Student> {
     const {
       departmentId,
 
@@ -214,15 +235,79 @@ export class AdminService {
     });
   }
 
-  async deleteStudentAccountService(id: string) {
+  async deleteStudentAccountService(id: string): Promise<Student> {
     return await this.studentService.delete(id);
   }
 
-  async deleteMultipleStudentAccountsService(ids: string[]) {
+  async deleteMultipleStudentAccountsService(
+    ids: string[],
+  ): Promise<{ message: string }> {
     return await this.studentService.deleteMany(ids);
   }
 
   /*
    * Admin services methods for managing lecturers
    */
+
+  async getAllLecturerAccountsService(): Promise<Lecturer[]> {
+    return await this.lecturerService.findAll();
+  }
+
+  async getLecturerAccountByIdService(id: string): Promise<Lecturer> {
+    return await this.lecturerService.findById(id);
+  }
+
+  async createLecturerAccountService(
+    data: CreateLecturerDto,
+  ): Promise<Lecturer> {
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(data.password, salt);
+    data.password = hashedPassword;
+    return await this.lecturerService.create(data);
+  }
+
+  async createMultipleLecturerAccountsService(
+    data: CreateMultipleLecturersDto,
+  ): Promise<{ message: string }> {
+    return await this.lecturerService.createMultipleLecturers(
+      data.lecturers.map((lecturer) => {
+        const { password, ...lecturerData } = lecturer;
+        return {
+          ...lecturerData,
+          password: bcrypt.hashSync(password, bcrypt.genSaltSync()),
+        };
+      }),
+    );
+  }
+
+  async updateLecturerAccountService(
+    id: string,
+    data: UpdateLecturerDto,
+  ): Promise<Lecturer> {
+    const { newPassword, confirmPassword, ...lecturerData } = data;
+    let password: string | undefined = undefined;
+    if (newPassword && confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestException(
+          'New password and confirm password do not match',
+        );
+      }
+      const salt = await bcrypt.genSalt();
+      password = await bcrypt.hash(newPassword, salt);
+    }
+    return await this.lecturerService.update(id, {
+      ...lecturerData,
+      ...(password && { password }),
+    });
+  }
+
+  async deleteLecturerAccountService(id: string): Promise<Lecturer> {
+    return await this.lecturerService.delete(id);
+  }
+
+  async deleteMultipleLecturerAccountsService(
+    ids: string[],
+  ): Promise<{ message: string }> {
+    return await this.lecturerService.deleteMany(ids);
+  }
 }

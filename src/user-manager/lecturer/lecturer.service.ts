@@ -96,6 +96,16 @@ export class LecturerService {
     }
   }
 
+  async createMultipleLecturers(
+    data: Prisma.LecturerCreateManyInput[],
+  ): Promise<{ message: string }> {
+    await this.prisma.lecturer.createMany({
+      data,
+      skipDuplicates: true,
+    });
+    return { message: 'Lecturers created successfully' };
+  }
+
   async update(
     id: string,
     data: Prisma.LecturerUpdateInput,
@@ -156,6 +166,23 @@ export class LecturerService {
       }
       this.logger.error('Failed to delete lecturer', error.stack);
       throw new BadRequestException('Failed to delete lecturer');
+    }
+  }
+
+  async deleteMany(ids: string[]): Promise<{ message: string }> {
+    try {
+      await this.prisma.lecturer.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return { message: 'Lecturers deleted successfully' };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('One or more lecturers not found');
+        }
+      }
+      this.logger.error('Failed to delete lecturers', error.stack);
+      throw new BadRequestException('Failed to delete lecturers');
     }
   }
 }

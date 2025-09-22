@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateDepartmentDto {
   @IsString()
@@ -16,7 +22,8 @@ export class CreateDepartmentDto {
 }
 
 export class CreateMultipleDepartmentsDto {
-  @IsNotEmpty({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => CreateDepartmentDto)
   departments: CreateDepartmentDto[];
 }
 
