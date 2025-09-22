@@ -9,6 +9,7 @@ import { Admin, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentService } from 'src/user-manager/student/student.service';
 import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
+import { CreateStudentDto } from './dto/student.dto';
 
 @Injectable()
 export class AdminService {
@@ -104,5 +105,17 @@ export class AdminService {
     }
   }
 
-  async createStudentAccountService() {}
+  async createStudentAccountService(data: CreateStudentDto) {
+    const { departmentId, ...studentData } = data;
+    const department = await this.prisma.department.findUnique({
+      where: { id: departmentId },
+    });
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+    return this.studentService.create({
+      ...studentData,
+      department: { connect: { id: departmentId } },
+    });
+  }
 }
