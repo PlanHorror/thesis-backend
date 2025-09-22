@@ -42,6 +42,18 @@ export class DepartmentService {
     }
   }
 
+  async createMany(departments: Prisma.DepartmentCreateManyInput[]) {
+    try {
+      return await this.prisma.department.createMany({
+        data: departments,
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.logger.error('Failed to create departments', error.stack);
+      throw new BadRequestException('Failed to create departments');
+    }
+  }
+
   async update(id: string, data: Prisma.DepartmentUpdateInput) {
     try {
       await this.findOne(id);
@@ -74,6 +86,22 @@ export class DepartmentService {
       }
       this.logger.error('Failed to delete department', error.stack);
       throw new BadRequestException('Failed to delete department');
+    }
+  }
+
+  async removeMany(ids: string[]) {
+    try {
+      return await this.prisma.department.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('One or more departments not found');
+        }
+      }
+      this.logger.error('Failed to delete departments', error.stack);
+      throw new BadRequestException('Failed to delete departments');
     }
   }
 }

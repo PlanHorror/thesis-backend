@@ -10,6 +10,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { StudentService } from 'src/user-manager/student/student.service';
 import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
 import { CreateStudentDto } from './dto/student.dto';
+import { DepartmentService } from 'src/department/department.service';
+import * as bcrypt from 'bcrypt';
+import {
+  CreateDepartmentDto,
+  CreateMultipleDepartmentsDto,
+  UpdateDepartmentDto,
+} from './dto/department.dto';
 
 @Injectable()
 export class AdminService {
@@ -18,6 +25,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly studentService: StudentService,
     private readonly lecturerService: LecturerService,
+    private readonly departmentService: DepartmentService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -105,17 +113,39 @@ export class AdminService {
     }
   }
 
-  async createStudentAccountService(data: CreateStudentDto) {
-    const { departmentId, ...studentData } = data;
-    const department = await this.prisma.department.findUnique({
-      where: { id: departmentId },
-    });
-    if (!department) {
-      throw new NotFoundException('Department not found');
-    }
-    return this.studentService.create({
-      ...studentData,
-      department: { connect: { id: departmentId } },
-    });
+  /*
+   * Admin services methods for managing departments
+   */
+
+  async getAllDepartmentsService() {
+    return this.departmentService.findAll();
   }
+
+  async getDepartmentByIdService(id: string) {
+    return this.departmentService.findOne(id);
+  }
+
+  async createDepartmentService(data: CreateDepartmentDto) {
+    return this.departmentService.create(data);
+  }
+
+  async createMultipleDepartmentsService(data: CreateMultipleDepartmentsDto) {
+    return this.departmentService.createMany(data.departments);
+  }
+
+  async updateDepartmentService(id: string, data: UpdateDepartmentDto) {
+    return this.departmentService.update(id, data);
+  }
+
+  async deleteDepartmentService(id: string) {
+    return this.departmentService.remove(id);
+  }
+
+  async deleteMultipleDepartmentsService(ids: string[]) {
+    return this.departmentService.removeMany(ids);
+  }
+
+  /*
+   * Admin services methods for managing students
+   */
 }

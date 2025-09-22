@@ -14,3 +14,25 @@ export class CreateDepartmentDto {
   @IsNotEmpty()
   headId: string;
 }
+
+export class CreateMultipleDepartmentsDto {
+  @IsNotEmpty({ each: true })
+  departments: CreateDepartmentDto[];
+}
+
+export class UpdateDepartmentDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  description: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  headId: string;
+}
