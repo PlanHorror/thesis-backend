@@ -29,17 +29,17 @@ export class AdminController {
     return this.adminService.findById(id);
   }
 
-  @Post()
+  @Post('create')
   async create(@Body() data: CreateAdminDto) {
     return this.adminService.create(data);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   async update(@Param('id') id: string, @Body() data: UpdateAdminDto) {
     return this.adminService.update(id, data);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   async delete(@Param('id') id: string) {
     return this.adminService.delete(id);
   }
