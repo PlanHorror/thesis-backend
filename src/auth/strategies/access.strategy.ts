@@ -8,7 +8,7 @@ import { Strategy } from 'passport-jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class AccessStrategy extends PassportStrategy(Strategy, 'access') {
+export class AccessStrategy extends PassportStrategy(Strategy, 'accessToken') {
   constructor(private readonly prismaService: PrismaService) {
     super({
       jwtFromRequest: (req: Request) => {

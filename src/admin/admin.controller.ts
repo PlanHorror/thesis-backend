@@ -1,11 +1,46 @@
-import { Controller, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RoleGuard } from 'common/guard/role.guard';
 import { Role } from 'common';
+import { CreateAdminDto, UpdateAdminDto } from './dto/admin.dto';
 
-@UseGuards(AuthGuard('admin-jwt'), new RoleGuard([Role.ADMIN]))
+@UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.ADMIN]))
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  @Get('all')
+  async findAll() {
+    return this.adminService.findAll();
+  }
+
+  @Get('find/:id')
+  async findOne(@Param('id') id: string) {
+    return this.adminService.findById(id);
+  }
+
+  @Post()
+  async create(@Body() data: CreateAdminDto) {
+    return this.adminService.create(data);
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() data: UpdateAdminDto) {
+    return this.adminService.update(id, data);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.adminService.delete(id);
+  }
 }
