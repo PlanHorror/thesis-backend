@@ -12,9 +12,15 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'accessToken') {
   constructor(private readonly prismaService: PrismaService) {
     super({
       jwtFromRequest: (req: Request) => {
-        let token = null;
-        if (req && req.cookies) {
-          token = req.cookies['accessToken'];
+        let token = null as string | null;
+        if (req && req.headers.cookie) {
+          const cookies = req.headers.cookie.split('; ');
+          const accessTokenCookie = cookies.find((cookie) =>
+            cookie.startsWith('accessToken='),
+          );
+          if (accessTokenCookie) {
+            token = accessTokenCookie.split('=')[1];
+          }
         }
         return token;
       },
