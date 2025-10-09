@@ -56,7 +56,7 @@ export class CreateStudentDto {
   @IsPhoneNumber('VN')
   @IsNotEmpty()
   @IsOptional()
-  phoneNumber: string;
+  phone: string;
 
   @IsString()
   @IsNotEmpty()
@@ -127,7 +127,7 @@ export class UpdateStudentDto {
   @IsPhoneNumber('VN')
   @IsNotEmpty()
   @IsOptional()
-  phoneNumber: string;
+  phone: string;
 
   @IsString()
   @IsNotEmpty()
