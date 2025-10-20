@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -37,6 +38,17 @@ export class DepartmentService {
         data,
       });
     } catch (error) {
+      if (error.code === 'P2002') {
+        if (Array.isArray(error.meta?.target)) {
+          console.warn(
+            'Unique constraint failed on the fields: ',
+            error.meta.target,
+          );
+          throw new ConflictException(
+            `${error.meta.target.join(', ')} already exists`,
+          );
+        }
+      }
       this.logger.error('Failed to create department', error.stack);
       throw new BadRequestException('Failed to create department');
     }
@@ -71,6 +83,17 @@ export class DepartmentService {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
           throw new NotFoundException('Department not found');
+        }
+        if (error.code === 'P2002') {
+          if (Array.isArray(error.meta?.target)) {
+            console.warn(
+              'Unique constraint failed on the fields: ',
+              error.meta.target,
+            );
+            throw new ConflictException(
+              `${error.meta.target.join(', ')} already exists`,
+            );
+          }
         }
       }
       throw new BadRequestException('Failed to update department');

@@ -11,6 +11,10 @@ export class CreateDepartmentDto {
   @IsNotEmpty()
   name: string;
 
+  @IsNotEmpty()
+  @IsString()
+  departmentId: string;
+
   @IsString()
   @IsNotEmpty()
   @IsOptional()
@@ -28,6 +32,11 @@ export class CreateMultipleDepartmentsDto {
 }
 
 export class UpdateDepartmentDto {
+  @IsNotEmpty()
+  @IsString()
+  @IsOptional()
+  departmentId: string;
+
   @IsString()
   @IsNotEmpty()
   @IsOptional()

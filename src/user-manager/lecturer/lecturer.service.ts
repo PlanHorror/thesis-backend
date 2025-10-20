@@ -71,23 +71,13 @@ export class LecturerService {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           if (Array.isArray(error.meta?.target)) {
-            if (
-              error.meta.target.includes('email') &&
-              error.meta.target.includes('username')
-            ) {
-              this.logger.warn(
-                `Email ${data.email} and Username ${data.username} already exist`,
-              );
-              throw new ConflictException('Email and username already exist');
-            }
-            if (error.meta.target.includes('email')) {
-              this.logger.warn(`Email ${data.email} already exists`);
-              throw new ConflictException('Email already exists');
-            }
-            if (error.meta.target.includes('username')) {
-              this.logger.warn(`Username ${data.username} already exists`);
-              throw new ConflictException('Username already exists');
-            }
+            console.warn(
+              'Unique constraint failed on the fields: ',
+              error.meta.target,
+            );
+            throw new ConflictException(
+              `${error.meta.target.join(', ')} already exists`,
+            );
           }
         }
       }
@@ -118,32 +108,18 @@ export class LecturerService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          this.logger.warn(` with ID ${id} not found`);
-          throw new NotFoundException(' not found');
+          this.logger.warn(`Lecturer with ID ${id} not found`);
+          throw new NotFoundException('Lecturer not found');
         }
         if (error.code === 'P2002') {
           if (Array.isArray(error.meta?.target)) {
-            if (
-              error.meta.target.includes('email') &&
-              error.meta.target.includes('username')
-            ) {
-              this.logger.warn(
-                `Email ${typeof data.email === 'string' ? data.email : ''} and Username ${typeof data.username === 'string' ? data.username : ''} already exist`,
-              );
-              throw new ConflictException('Email and username already exist');
-            }
-            if (error.meta.target.includes('email')) {
-              this.logger.warn(
-                `Email ${typeof data.email === 'string' ? data.email : ''} already exists`,
-              );
-              throw new ConflictException('Email already exists');
-            }
-            if (error.meta.target.includes('username')) {
-              this.logger.warn(
-                `Username ${typeof data.username === 'string' ? data.username : ''} already exists`,
-              );
-              throw new ConflictException('Username already exists');
-            }
+            console.warn(
+              'Unique constraint failed on the fields: ',
+              error.meta.target,
+            );
+            throw new ConflictException(
+              `${error.meta.target.join(', ')} already exists`,
+            );
           }
         }
       }

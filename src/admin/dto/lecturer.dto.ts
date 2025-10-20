@@ -10,6 +10,10 @@ import {
 } from 'class-validator';
 
 export class CreateLecturerDto {
+  @IsNotEmpty()
+  @IsString()
+  lecturerId: string;
+
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -44,6 +48,11 @@ export class UpdateLecturerDto {
   @IsNotEmpty()
   @IsOptional()
   username: string;
+
+  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  lecturerId: string;
 
   @IsString()
   @IsNotEmpty()
