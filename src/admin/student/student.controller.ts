@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from '../admin.service';
@@ -31,6 +32,23 @@ export class StudentController {
   @Get('/find/:id ')
   async findOne(@Param('id') id: string) {
     return this.adminService.getStudentAccountByIdService(id);
+  }
+
+  @Get('/find')
+  async findByEmail(
+    @Query('email') email?: string,
+    @Query('studentId') studentId?: string,
+    @Query('username') username?: string,
+    @Query('citizenId') citizenId?: string,
+    @Query('phone') phone?: string,
+  ) {
+    return this.adminService.getStudentAccountByConditionService(
+      email,
+      studentId,
+      username,
+      citizenId,
+      phone,
+    );
   }
 
   @Post('create')
