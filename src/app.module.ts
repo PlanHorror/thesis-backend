@@ -7,9 +7,10 @@ import { StudentModule } from './user-manager/student/student.module';
 import { LecturerModule } from './user-manager/lecturer/lecturer.module';
 import { AdminModule } from './admin/admin.module';
 import { DepartmentModule } from './department/department.module';
+import { CourseModule } from './course/course.module';
 
 @Module({
-  imports: [AuthModule, StudentModule, LecturerModule, AdminModule, DepartmentModule],
+  imports: [AuthModule, StudentModule, LecturerModule, AdminModule, DepartmentModule, CourseModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

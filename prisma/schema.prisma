@@ -50,23 +50,51 @@ model Lecturer {
   id        String   @id @default(cuid())
   email     String   @unique
   username  String   @unique
+  lecturerId String   @unique
   password  String
   fullName  String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  departmentHeads Department[] @relation("DepartmentHead")
+  departmentHead Department? @relation("DepartmentHead")
 }
 
 model Department {
   id          String   @id @default(cuid())
   head       Lecturer? @relation("DepartmentHead", fields: [headId], references: [id])
-  headId     String?
+  headId     String? @unique
+  departmentId String   @unique
   name        String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   students    Student[]  @relation("DepartmentStudents")
+  courses     Course[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  department  Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  name        String
+  description String?
+  semester    String
+  credits     Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents   CourseDocument[]
+}
+
+model CourseDocument {
+  id        String   @id @default(cuid())
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  title     String
+  path      String   @unique
+  url       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

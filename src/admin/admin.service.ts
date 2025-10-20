@@ -175,6 +175,22 @@ export class AdminService {
     return await this.studentService.findById(id);
   }
 
+  async getStudentAccountByConditionService(
+    email?: string,
+    studentId?: string,
+    username?: string,
+    citizenId?: string,
+    phone?: string,
+  ): Promise<Student> {
+    return await this.studentService.findByCondition(
+      email,
+      studentId,
+      username,
+      citizenId,
+      phone,
+    );
+  }
+
   async getStudentByDepartmentIdService(
     departmentId: string,
   ): Promise<Student[]> {

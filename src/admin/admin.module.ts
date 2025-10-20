@@ -8,6 +8,7 @@ import { DepartmentModule } from 'src/department/department.module';
 import { LecturerController } from './lecturer/lecturer.controller';
 import { StudentController } from './student/student.controller';
 import { DepartmentController } from './department/department.controller';
+import { CourseController } from './course/course.controller';
 
 @Module({
   controllers: [
@@ -15,6 +16,7 @@ import { DepartmentController } from './department/department.controller';
     LecturerController,
     StudentController,
     DepartmentController,
+    CourseController,
   ],
   providers: [AdminService, PrismaService],
   exports: [AdminService],
