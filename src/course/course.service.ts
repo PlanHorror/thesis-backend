@@ -12,13 +12,31 @@ export class CourseService {
   private readonly logger = new Logger(CourseService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<Course[]> {
-    return this.prisma.course.findMany();
+  async findAll(
+    includeDepartment = false,
+    includeDocuments = false,
+  ): Promise<Course[]> {
+    return this.prisma.course.findMany({
+      include: {
+        department: includeDepartment,
+        documents: includeDocuments,
+      },
+    });
   }
 
-  async findOne(id: string): Promise<Course> {
+  async findOne(
+    id: string,
+    includeDepartment = false,
+    includeDocuments = false,
+  ): Promise<Course> {
     try {
-      const course = await this.prisma.course.findUnique({ where: { id } });
+      const course = await this.prisma.course.findUnique({
+        where: { id },
+        include: {
+          department: includeDepartment,
+          documents: includeDocuments,
+        },
+      });
       if (!course) {
         throw new NotFoundException(`Course with ID ${id} not found`);
       }
@@ -29,10 +47,39 @@ export class CourseService {
     }
   }
 
+  async findByDepartmentId(
+    departmentId: string,
+    includeDocuments = false,
+    includeDepartment = false,
+  ): Promise<Course[]> {
+    try {
+      return this.prisma.course.findMany({
+        where: { departmentId },
+        include: {
+          documents: includeDocuments,
+          department: includeDepartment,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        'Failed to retrieve courses by department ID',
+        error.stack,
+      );
+      throw new NotFoundException(
+        `Courses for department ID ${departmentId} not found`,
+      );
+    }
+  }
+
   async create(data: Prisma.CourseCreateInput): Promise<Course> {
     try {
       return await this.prisma.course.create({ data });
     } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          `Department with ID ${data.department?.connect?.id} not found`,
+        );
+      }
       this.logger.error('Failed to create course', error.stack);
       throw new BadRequestException('Error creating course');
     }
@@ -45,6 +92,9 @@ export class CourseService {
       await this.prisma.course.createMany({ data: courses });
       return { message: 'Courses created successfully' };
     } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('One or more departments not found');
+      }
       this.logger.error('Failed to create courses', error.stack);
       throw new BadRequestException('Error creating courses');
     }
@@ -54,6 +104,9 @@ export class CourseService {
     try {
       return await this.prisma.course.update({ where: { id }, data });
     } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Course with ID ${id} not found`);
+      }
       this.logger.error('Failed to update course', error.stack);
       throw new BadRequestException('Error updating course');
     }
@@ -63,6 +116,9 @@ export class CourseService {
     try {
       return await this.prisma.course.delete({ where: { id } });
     } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Course with ID ${id} not found`);
+      }
       this.logger.error('Failed to delete course', error.stack);
       throw new BadRequestException('Error deleting course');
     }
@@ -75,6 +131,11 @@ export class CourseService {
       });
       return { message: 'Courses deleted successfully' };
     } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          `Courses with IDs ${ids.join(', ')} not found`,
+        );
+      }
       this.logger.error('Failed to delete courses', error.stack);
       throw new BadRequestException('Error deleting courses');
     }

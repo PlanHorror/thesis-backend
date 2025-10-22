@@ -26,6 +26,9 @@ import {
   CreateMultipleLecturersDto,
   UpdateLecturerDto,
 } from './dto/lecturer.dto';
+import { CourseService } from 'src/course/course.service';
+import { DocumentService } from 'src/course/document/document.service';
+import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 
 @Injectable()
 export class AdminService {
@@ -35,6 +38,8 @@ export class AdminService {
     private readonly studentService: StudentService,
     private readonly lecturerService: LecturerService,
     private readonly departmentService: DepartmentService,
+    private readonly courseService: CourseService,
+    private readonly documentService: DocumentService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -325,5 +330,138 @@ export class AdminService {
     ids: string[],
   ): Promise<{ message: string }> {
     return await this.lecturerService.deleteMany(ids);
+  }
+
+  /*
+   * Admin services methods for managing courses
+   */
+
+  async getAllCoursesService(
+    includeDepartment = false,
+    includeDocuments = false,
+  ) {
+    return await this.courseService.findAll(
+      includeDepartment,
+      includeDocuments,
+    );
+  }
+
+  async getAllCoursesByDepartmentIdService(
+    departmentId: string,
+    includeDocuments = false,
+    includeDepartment = false,
+  ) {
+    return await this.courseService.findByDepartmentId(
+      departmentId,
+      includeDocuments,
+      includeDepartment,
+    );
+  }
+
+  async getCourseByIdService(
+    id: string,
+    includeDocuments = false,
+    includeDepartment = false,
+  ) {
+    return await this.courseService.findOne(
+      id,
+      includeDocuments,
+      includeDepartment,
+    );
+  }
+
+  async createCourseService(
+    data: CreateCourseDto,
+    files: Express.Multer.File[],
+  ) {
+    const { courseDocuments, ...courseData } = data;
+    const createdCourse = await this.courseService.create({
+      ...courseData,
+      department: { connect: { id: data.departmentId } },
+    });
+    if (courseDocuments && courseDocuments.length > 0) {
+      const documentsData = courseDocuments.map((doc) => {
+        const file = files.find((file) => file.fieldname === doc.id.toString());
+        if (!file) {
+          throw new BadRequestException(
+            `File for document ${doc.title} not found`,
+          );
+        }
+        return {
+          ...doc,
+          courseId: createdCourse.id,
+          file,
+        };
+      });
+      await this.documentService.createMany(documentsData);
+    }
+    return {
+      message: 'Course created successfully',
+    };
+  }
+
+  async updateCourseService(
+    id: string,
+    data: UpdateCourseDto,
+    files: Express.Multer.File[],
+  ) {
+    const { updateDocuments, createDocuments, departmentId, ...courseData } =
+      data;
+    await Promise.all([
+      this.courseService.update(id, {
+        ...courseData,
+        ...(departmentId && {
+          department: { connect: { id: departmentId } },
+        }),
+      }),
+      ...(createDocuments && createDocuments.length > 0
+        ? [
+            this.documentService.createMany(
+              createDocuments.map((doc) => {
+                const file = files.find(
+                  (file) => file.fieldname === doc.id.toString(),
+                );
+                if (!file) {
+                  throw new BadRequestException(
+                    `File for document ${doc.title} not found`,
+                  );
+                }
+                return {
+                  ...doc,
+                  courseId: id,
+                  file,
+                };
+              }),
+            ),
+          ]
+        : []),
+      ...(updateDocuments && updateDocuments.length > 0
+        ? [
+            this.documentService.updateMany(
+              updateDocuments.map((doc) => ({
+                id: doc.id,
+                title: doc.title,
+                file: files.find(
+                  (file) => file.fieldname === doc.id.toString(),
+                ),
+              })),
+            ),
+          ]
+        : []),
+      ...(data.deleteDocumentIds && data.deleteDocumentIds.length > 0
+        ? [this.documentService.deleteMany(data.deleteDocumentIds)]
+        : []),
+    ]);
+    return {
+      message: 'Course updated successfully',
+    };
+  }
+
+  async deleteCourseService(id: string) {
+    return await this.courseService.remove(id);
+  }
+
+  async deleteManyCoursesService(ids: string[]) {
+    return await this.courseService.removeMany(ids);
   }
 }
