@@ -86,6 +86,7 @@ model Course {
   updatedAt   DateTime @updatedAt
 
   documents   CourseDocument[]
+  courseOnSemesters CourseOnSemester[]
 }
 
 model CourseDocument {
@@ -97,4 +98,25 @@ model CourseDocument {
   url       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Semester {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseOnSemesters CourseOnSemester[]
+}
+
+model CourseOnSemester {
+  id          String   @id @default(cuid())
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    String
+  semester    Semester @relation(fields: [semesterId], references: [id])
+  semesterId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

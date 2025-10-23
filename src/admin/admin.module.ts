@@ -11,6 +11,7 @@ import { DepartmentController } from './department/department.controller';
 import { CourseController } from './course/course.controller';
 import { CourseModule } from 'src/course/course.module';
 import { DocumentModule } from 'src/course/document/document.module';
+import { SemesterController } from './semester/semester.controller';
 
 @Module({
   controllers: [
@@ -19,6 +20,7 @@ import { DocumentModule } from 'src/course/document/document.module';
     StudentController,
     DepartmentController,
     CourseController,
+    SemesterController,
   ],
   providers: [AdminService, PrismaService],
   exports: [AdminService],
