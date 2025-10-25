@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,7 +17,7 @@ export class SemesterService {
         'Cannot include documents without including courses',
       );
     }
-    return this.prisma.semester.findMany({
+    return await this.prisma.semester.findMany({
       include: {
         courseOnSemesters: includeCourses
           ? {
@@ -42,7 +43,7 @@ export class SemesterService {
       );
     }
     try {
-      return this.prisma.semester.findUnique({
+      return await this.prisma.semester.findUnique({
         where: { id },
         include: {
           courseOnSemesters: includeCourses
@@ -67,17 +68,22 @@ export class SemesterService {
 
   async create(data: Prisma.SemesterCreateInput) {
     try {
-      return this.prisma.semester.create({
+      return await this.prisma.semester.create({
         data,
       });
     } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException(
+          'Semester with the same name already exists',
+        );
+      }
       throw new BadRequestException('Failed to create semester');
     }
   }
 
   async update(id: string, data: Prisma.SemesterUpdateInput) {
     try {
-      return this.prisma.semester.update({
+      return await this.prisma.semester.update({
         where: { id },
         data,
       });
@@ -91,7 +97,7 @@ export class SemesterService {
 
   async delete(id: string) {
     try {
-      return this.prisma.semester.delete({
+      return await this.prisma.semester.delete({
         where: { id },
       });
     } catch (error) {
