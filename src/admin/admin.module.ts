@@ -12,6 +12,8 @@ import { CourseController } from './course/course.controller';
 import { CourseModule } from 'src/course/course.module';
 import { DocumentModule } from 'src/course/document/document.module';
 import { SemesterController } from './semester/semester.controller';
+import { SemesterModule } from 'src/semester/semester.module';
+import { CourseSemesterModule } from 'src/semester/course-semester/course-semester.module';
 
 @Module({
   controllers: [
@@ -30,6 +32,8 @@ import { SemesterController } from './semester/semester.controller';
     DepartmentModule,
     CourseModule,
     DocumentModule,
+    SemesterModule,
+    CourseSemesterModule,
   ],
 })
 export class AdminModule {}

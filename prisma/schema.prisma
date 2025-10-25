@@ -58,6 +58,7 @@ model Lecturer {
   updatedAt DateTime @updatedAt
 
   departmentHead Department? @relation("DepartmentHead")
+  courseOnSemesters CourseOnSemester[]
 }
 
 model Department {
@@ -117,6 +118,12 @@ model CourseOnSemester {
   courseId    String
   semester    Semester @relation(fields: [semesterId], references: [id])
   semesterId  String
+  lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
+  lecturerId String?
+  location    String?
+  dayOfWeek   Int?
+  startTime   String?
+  endTime     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

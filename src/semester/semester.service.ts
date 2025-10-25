@@ -11,7 +11,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class SemesterService {
   constructor(private prisma: PrismaService) {}
 
-  async getAll(includeCourses = false, includeDocuments = false) {
+  async findAll(includeCourses = false, includeDocuments = false) {
     if (includeDocuments && !includeCourses) {
       throw new BadRequestException(
         'Cannot include documents without including courses',
@@ -36,7 +36,7 @@ export class SemesterService {
     });
   }
 
-  async getById(id: string, includeCourses = false, includeDocuments = false) {
+  async findById(id: string, includeCourses = false, includeDocuments = false) {
     if (includeDocuments && !includeCourses) {
       throw new BadRequestException(
         'Cannot include documents without including courses',
@@ -105,6 +105,22 @@ export class SemesterService {
         throw new NotFoundException(`Semester with ID ${id} not found`);
       }
       throw new BadRequestException('Failed to delete semester');
+    }
+  }
+
+  async deleteMany(ids: string[]) {
+    try {
+      await this.prisma.semester.deleteMany({
+        where: {
+          id: { in: ids },
+        },
+      });
+      return { message: 'Semesters deleted successfully' };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`One or more semesters not found`);
+      }
+      throw new BadRequestException('Failed to delete semesters');
     }
   }
 }

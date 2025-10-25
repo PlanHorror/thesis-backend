@@ -14,7 +14,7 @@ export class DepartmentService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<Department[]> {
-    return this.prisma.department.findMany();
+    return await this.prisma.department.findMany();
   }
 
   async findById(id: string): Promise<Department> {

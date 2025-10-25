@@ -29,6 +29,12 @@ import {
 import { CourseService } from 'src/course/course.service';
 import { DocumentService } from 'src/course/document/document.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
+import { SemesterService } from 'src/semester/semester.service';
+import {
+  CourseOnSemesterDto,
+  CreateSemesterDto,
+  UpdateSemesterDto,
+} from './dto/semester.dto';
 
 @Injectable()
 export class AdminService {
@@ -40,10 +46,11 @@ export class AdminService {
     private readonly departmentService: DepartmentService,
     private readonly courseService: CourseService,
     private readonly documentService: DocumentService,
+    private readonly semesterService: SemesterService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
-    return this.prisma.admin.findMany();
+    return await this.prisma.admin.findMany();
   }
 
   async findById(id: string): Promise<Admin> {
@@ -463,5 +470,44 @@ export class AdminService {
 
   async deleteManyCoursesService(ids: string[]) {
     return await this.courseService.removeMany(ids);
+  }
+
+  /*
+   * Admin services methods for managing semesters
+   */
+
+  async getAllSemestersService(
+    includeCourses = false,
+    includeSemesters = false,
+  ) {
+    return await this.semesterService.findAll(includeCourses, includeSemesters);
+  }
+
+  async getSemesterByIdService(
+    id: string,
+    includeCourses = false,
+    includeSemesters = false,
+  ) {
+    return await this.courseService.findOne(
+      id,
+      includeCourses,
+      includeSemesters,
+    );
+  }
+
+  async createSemesterService(data: CreateSemesterDto) {
+    return await this.semesterService.create(data);
+  }
+
+  async updateSemesterService(id: string, data: UpdateSemesterDto) {
+    return await this.semesterService.update(id, data);
+  }
+
+  async deleteSemesterService(id: string) {
+    return await this.semesterService.delete(id);
+  }
+
+  async deleteManySemestersService(ids: string[]) {
+    return await this.semesterService.deleteMany(ids);
   }
 }

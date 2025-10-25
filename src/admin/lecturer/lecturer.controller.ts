@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -53,7 +54,9 @@ export class LecturerController {
   }
 
   @Delete('delete')
-  async deleteMultiple(@Body('ids') ids: string[]) {
-    return this.adminService.deleteMultipleLecturerAccountsService(ids);
+  async deleteMultiple(@Query('ids') ids: string) {
+    return this.adminService.deleteMultipleLecturerAccountsService(
+      ids.split(','),
+    );
   }
 }
