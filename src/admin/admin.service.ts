@@ -35,6 +35,7 @@ import {
   CreateSemesterDto,
   UpdateSemesterDto,
 } from './dto/semester.dto';
+import { CourseSemesterService } from 'src/semester/course-semester/course-semester.service';
 
 @Injectable()
 export class AdminService {
@@ -47,6 +48,7 @@ export class AdminService {
     private readonly courseService: CourseService,
     private readonly documentService: DocumentService,
     private readonly semesterService: SemesterService,
+    private readonly courseOnSemesterService: CourseSemesterService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -509,5 +511,59 @@ export class AdminService {
 
   async deleteManySemestersService(ids: string[]) {
     return await this.semesterService.deleteMany(ids);
+  }
+
+  /*
+   * Admin services methods for managing courses on semesters
+   */
+
+  async getAllCoursesOnSemestersService(
+    includeCourses = false,
+    includeSemesters = false,
+    courseId?: string,
+    semesterId?: string,
+  ) {
+    return await this.courseOnSemesterService.findAll(
+      includeCourses,
+      includeSemesters,
+      courseId,
+      semesterId,
+    );
+  }
+
+  async getCourseOnSemesterByIdService(
+    id: string,
+    includeCourses = false,
+    includeSemesters = false,
+  ) {
+    return await this.courseOnSemesterService.findOne(
+      id,
+      includeCourses,
+      includeSemesters,
+    );
+  }
+
+  async addCourseToSemesterService(data: CourseOnSemesterDto) {
+    const { semesterId, courseId, lecturerId, ...courseOnSemesterData } = data;
+    return await this.courseOnSemesterService.create({
+      ...courseOnSemesterData,
+      semester: { connect: { id: semesterId } },
+      course: { connect: { id: courseId } },
+      lecturer: { connect: { id: lecturerId } },
+    });
+  }
+
+  async updateCourseOnSemesterService(id: string, data: CourseOnSemesterDto) {
+    const { semesterId, courseId, lecturerId, ...courseOnSemesterData } = data;
+    return await this.courseOnSemesterService.update(id, {
+      ...courseOnSemesterData,
+      semester: { connect: { id: semesterId } },
+      course: { connect: { id: courseId } },
+      lecturer: { connect: { id: lecturerId } },
+    });
+  }
+
+  async removeCourseFromSemesterService(id: string) {
+    return await this.courseOnSemesterService.delete(id);
   }
 }

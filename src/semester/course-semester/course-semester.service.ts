@@ -10,7 +10,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class CourseSemesterService {
   constructor(private readonly prisma: PrismaService) {}
-  async getAll(
+  async findAll(
     includeCourses = false,
     includeSemesters = false,
     courseId?: string,
@@ -28,7 +28,7 @@ export class CourseSemesterService {
     });
   }
 
-  async getById(id: string, includeCourses = false, includeSemesters = false) {
+  async findOne(id: string, includeCourses = false, includeSemesters = false) {
     try {
       return await this.prisma.courseOnSemester.findUnique({
         where: { id },
