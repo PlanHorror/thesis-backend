@@ -14,6 +14,7 @@ import { DocumentModule } from 'src/course/document/document.module';
 import { SemesterController } from './semester/semester.controller';
 import { SemesterModule } from 'src/semester/semester.module';
 import { CourseSemesterModule } from 'src/semester/course-semester/course-semester.module';
+import { CourseController } from './semester/course/course.controller';
 
 @Module({
   controllers: [
