@@ -119,4 +119,6 @@ model CourseOnSemester {
   semesterId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([courseId, semesterId])
 }
