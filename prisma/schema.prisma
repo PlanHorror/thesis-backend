@@ -122,8 +122,8 @@ model CourseOnSemester {
   lecturerId String?
   location    String?
   dayOfWeek   Int?
-  startTime   String?
-  endTime     String?
+  startTime   Int?
+  endTime     Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

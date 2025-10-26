@@ -543,8 +543,22 @@ export class AdminService {
     );
   }
 
-  async addCourseToSemesterService(data: CourseOnSemesterDto) {
+  async createCourseToSemesterService(data: CourseOnSemesterDto) {
     const { semesterId, courseId, lecturerId, ...courseOnSemesterData } = data;
+    if (
+      await this.prisma.courseOnSemester.findFirst({
+        where: {
+          lecturerId: lecturerId,
+          dayOfWeek: courseOnSemesterData.dayOfWeek,
+          startTime: { lt: courseOnSemesterData.endTime },
+          endTime: { gt: courseOnSemesterData.startTime },
+        },
+      })
+    ) {
+      throw new BadRequestException(
+        `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${courseOnSemesterData.dayOfWeek} between ${courseOnSemesterData.startTime} and ${courseOnSemesterData.endTime}`,
+      );
+    }
     return await this.courseOnSemesterService.create({
       ...courseOnSemesterData,
       semester: { connect: { id: semesterId } },
@@ -555,6 +569,21 @@ export class AdminService {
 
   async updateCourseOnSemesterService(id: string, data: CourseOnSemesterDto) {
     const { semesterId, courseId, lecturerId, ...courseOnSemesterData } = data;
+    if (
+      await this.prisma.courseOnSemester.findFirst({
+        where: {
+          lecturerId: lecturerId,
+          dayOfWeek: courseOnSemesterData.dayOfWeek,
+          startTime: { lt: courseOnSemesterData.endTime },
+          endTime: { gt: courseOnSemesterData.startTime },
+          NOT: { id: id },
+        },
+      })
+    ) {
+      throw new BadRequestException(
+        `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${courseOnSemesterData.dayOfWeek} between ${courseOnSemesterData.startTime} and ${courseOnSemesterData.endTime}`,
+      );
+    }
     return await this.courseOnSemesterService.update(id, {
       ...courseOnSemesterData,
       semester: { connect: { id: semesterId } },
@@ -563,7 +592,11 @@ export class AdminService {
     });
   }
 
-  async removeCourseFromSemesterService(id: string) {
+  async deleteCourseFromSemesterService(id: string) {
     return await this.courseOnSemesterService.delete(id);
+  }
+
+  async deleteManyCoursesFromSemestersService(ids: string[]) {
+    return await this.courseOnSemesterService.deleteMany(ids);
   }
 }

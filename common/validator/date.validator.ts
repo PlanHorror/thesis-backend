@@ -33,18 +33,18 @@ export class IsLaterTimeConstraint implements ValidatorConstraintInterface {
       return true;
     }
 
-    // Convert to minutes for reliable comparison
-    const endTimeMinutes = timeToMinutes(value);
-    const startTimeMinutes = timeToMinutes(relatedValue);
+    // // Convert to minutes for reliable comparison
+    // const endTimeMinutes = timeToMinutes(value);
+    // const startTimeMinutes = timeToMinutes(relatedValue);
 
     // If either time is invalid, let the default validation handle it,
     // or return false if you want this decorator to also enforce time format validity
-    if (endTimeMinutes === null || startTimeMinutes === null) {
+    if (value === null || relatedValue === null) {
       return true; // We'll rely on a separate @IsTimeString decorator for format check
     }
 
     // The 'value' (endTime) must be strictly greater than the 'relatedValue' (startTime)
-    return endTimeMinutes > startTimeMinutes;
+    return value > relatedValue;
   }
 
   defaultMessage(args: ValidationArguments) {
