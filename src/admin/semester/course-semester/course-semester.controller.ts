@@ -11,9 +11,8 @@ import {
 import { isBoolean, isString } from 'class-validator';
 import { AdminService } from 'src/admin/admin.service';
 import { CourseOnSemesterDto } from 'src/admin/dto/semester.dto';
-
 @Controller('admin/semester/course')
-export class CourseController {
+export class CourseSemesterController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('all')

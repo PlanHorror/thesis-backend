@@ -9,10 +9,11 @@ import { AdminModule } from './admin/admin.module';
 import { DepartmentModule } from './department/department.module';
 import { CourseModule } from './course/course.module';
 import { SemesterModule } from './semester/semester.module';
+import { CourseSemesterController } from './src/admin/semester/course-semester/course-semester.controller';
 
 @Module({
   imports: [AuthModule, StudentModule, LecturerModule, AdminModule, DepartmentModule, CourseModule, SemesterModule],
-  controllers: [AppController],
+  controllers: [AppController, CourseSemesterController],
   providers: [AppService, PrismaService],
 })
 export class AppModule {}
