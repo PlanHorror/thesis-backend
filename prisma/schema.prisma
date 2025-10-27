@@ -44,6 +44,8 @@ model Student {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  enrollments StudentCourseEnrollment[]
 }
 
 model Lecturer {
@@ -124,8 +126,27 @@ model CourseOnSemester {
   dayOfWeek   Int?
   startTime   Int?
   endTime     Int?
+  capacity    Int?
+  isSummarized Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@unique([courseId, semesterId])
+  enrollments StudentCourseEnrollment[]
+}
+
+model StudentCourseEnrollment {
+  id                 String   @id @default(cuid())
+  student            Student  @relation(fields: [studentId], references: [id])
+  studentId         String
+  courseOnSemester  CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
+  courseOnSemesterId String
+  gradeType1      Float?
+  gradeType2      Float?
+  gradeType3      Float? 
+  finalGrade      Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([studentId, courseOnSemesterId])
 }

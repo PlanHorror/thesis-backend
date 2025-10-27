@@ -15,6 +15,7 @@ import { SemesterController } from './semester/semester.controller';
 import { SemesterModule } from 'src/semester/semester.module';
 import { CourseSemesterModule } from 'src/semester/course-semester/course-semester.module';
 import { CourseController } from './semester/course/course.controller';
+import { EnrollmentController } from './course/enrollment/enrollment.controller';
 
 @Module({
   controllers: [
@@ -24,6 +25,7 @@ import { CourseController } from './semester/course/course.controller';
     DepartmentController,
     CourseController,
     SemesterController,
+    EnrollmentController,
   ],
   providers: [AdminService, PrismaService],
   exports: [AdminService],
