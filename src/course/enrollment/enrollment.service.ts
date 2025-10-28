@@ -50,9 +50,36 @@ export class EnrollmentService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(
+    id: string,
+    includeStudent = false,
+    includeCourseOnSemester = false,
+    includeCourse = false,
+    includeSemester = false,
+    includeLecturer = false,
+  ) {
+    if (
+      !includeCourseOnSemester &&
+      (includeCourse || includeSemester || includeLecturer)
+    ) {
+      throw new BadRequestException(
+        'includeCourseOnSemester must be true if includeCourse, includeSemester, or includeLecturer is true',
+      );
+    }
     return await this.prisma.studentCourseEnrollment.findUnique({
       where: { id },
+      include: {
+        student: includeStudent,
+        courseOnSemester: includeCourseOnSemester
+          ? {
+              include: {
+                course: includeCourse,
+                semester: includeSemester,
+                lecturer: includeLecturer,
+              },
+            }
+          : false,
+      },
     });
   }
 

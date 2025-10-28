@@ -36,6 +36,11 @@ import {
   UpdateSemesterDto,
 } from './dto/semester.dto';
 import { CourseSemesterService } from 'src/semester/course-semester/course-semester.service';
+import { EnrollmentService } from 'src/course/enrollment/enrollment.service';
+import {
+  CreateCourseEnrollmentDto,
+  UpdateCourseEnrollmentDto,
+} from './dto/course-enrollment.dto';
 
 @Injectable()
 export class AdminService {
@@ -49,6 +54,7 @@ export class AdminService {
     private readonly documentService: DocumentService,
     private readonly semesterService: SemesterService,
     private readonly courseOnSemesterService: CourseSemesterService,
+    private readonly enrollmentService: EnrollmentService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -598,5 +604,83 @@ export class AdminService {
 
   async deleteManyCoursesFromSemestersService(ids: string[]) {
     return await this.courseOnSemesterService.deleteMany(ids);
+  }
+
+  /*
+   * Admin services methods for managing enrollments
+   */
+
+  async getAllEnrollmentsService(
+    includeStudent = false,
+    includeCourseOnSemester = false,
+    includeCourse = false,
+    includeSemester = false,
+    includeLecturer = false,
+    studentId?: string,
+    courseOnSemesterId?: string,
+  ) {
+    return await this.enrollmentService.findAll(
+      includeStudent,
+      includeCourseOnSemester,
+      includeCourse,
+      includeSemester,
+      includeLecturer,
+      studentId,
+      courseOnSemesterId,
+    );
+  }
+
+  async getEnrollmentByIdService(
+    id: string,
+    includeStudent = false,
+    includeCourseOnSemester = false,
+    includeCourse = false,
+    includeSemester = false,
+    includeLecturer = false,
+  ) {
+    return await this.enrollmentService.findOne(
+      id,
+      includeStudent,
+      includeCourseOnSemester,
+      includeCourse,
+      includeSemester,
+      includeLecturer,
+    );
+  }
+
+  async createEnrollmentService(data: CreateCourseEnrollmentDto) {
+    return await this.enrollmentService.create({
+      student: { connect: { id: data.studentId } },
+      courseOnSemester: { connect: { id: data.courseOnSemesterId } },
+      gradeType1: data.gradeType1,
+      gradeType2: data.gradeType2,
+      gradeType3: data.gradeType3,
+      finalGrade:
+        data.gradeType1 && data.gradeType2 && data.gradeType3
+          ? data.gradeType1 * 0.1 +
+            data.gradeType2 * 0.3 +
+            data.gradeType3 * 0.6
+          : null,
+    });
+  }
+
+  async updateEnrollmentService(id: string, data: UpdateCourseEnrollmentDto) {
+    return await this.enrollmentService.update(id, {
+      ...data,
+      finalGrade:
+        data.gradeType1 && data.gradeType2 && data.gradeType3
+          ? data.gradeType1 * 0.1 +
+            data.gradeType2 * 0.3 +
+            data.gradeType3 * 0.6
+          : null,
+    });
+  }
+
+  async deleteEnrollmentService(id: string) {
+    return await this.enrollmentService.delete(id);
+  }
+
+  async deleteManyEnrollmentsService(ids: string[]) {
+    return await this.enrollmentService.deleteMany(ids);
   }
 }
