@@ -14,6 +14,19 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
+enum NotificationType {
+  INFO
+  WARNING
+  ALERT
+}
+
+enum ExamStatus {
+  NOT_ELIGIBLE  
+  ELIGIBLE      
+  ABSENT      
+  COMPLETED
+}
         
 
 model Admin {
@@ -46,6 +59,7 @@ model Student {
   updatedAt DateTime @updatedAt
 
   enrollments StudentCourseEnrollment[]
+  notifications Notification[]
 }
 
 model Lecturer {
@@ -61,6 +75,7 @@ model Lecturer {
 
   departmentHead Department? @relation("DepartmentHead")
   courseOnSemesters CourseOnSemester[]
+  notifications Notification[]
 }
 
 model Department {
@@ -112,6 +127,7 @@ model Semester {
   updatedAt DateTime @updatedAt
 
   courseOnSemesters CourseOnSemester[]
+  enrollmentSessions EnrollmentSession[]
 }
 
 model CourseOnSemester {
@@ -133,6 +149,7 @@ model CourseOnSemester {
 
   @@unique([courseId, semesterId])
   enrollments StudentCourseEnrollment[]
+  examSchedule ExamSchedule?
 }
 
 model StudentCourseEnrollment {
@@ -145,8 +162,56 @@ model StudentCourseEnrollment {
   gradeType2      Float?
   gradeType3      Float? 
   finalGrade      Float?
+  examStatus      ExamStatus @default(ELIGIBLE)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@unique([studentId, courseOnSemesterId])
 }
+
+model EnrollmentSession {
+  id          String   @id @default(cuid())
+  name        String?  
+  semester    Semester @relation(fields: [semesterId], references: [id])
+  semesterId  String
+  
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ExamSchedule {
+  id                String           @id @default(cuid())
+  courseOnSemester  CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
+  courseOnSemesterId String          @unique // One final exam per course instance
+  
+  examDate          String?
+  startTime         DateTime?
+  endTime           DateTime?
+  
+  location          String?          
+  description       String?          
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  type        NotificationType @default(INFO)
+
+  student     Student?  @relation(fields: [studentId], references: [id])
+  studentId   String?
+  lecturer    Lecturer? @relation(fields: [lecturerId], references: [id])
+  lecturerId  String?
+
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+ 
