@@ -1,4 +1,12 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
+import { EnrollmentService } from './enrollment.service';
 
 @Controller('enrollment')
-export class EnrollmentController {}
+export class EnrollmentController {
+  constructor(private readonly enrollmentService: EnrollmentService) {}
+
+  @Get('all')
+  async getAllEnrollments() {
+    return this.enrollmentService.findAll();
+  }
+}
