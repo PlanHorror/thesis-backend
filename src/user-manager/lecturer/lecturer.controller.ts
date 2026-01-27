@@ -8,12 +8,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LecturerService } from './lecturer.service';
-import { UpdateLecturerDto } from 'src/admin/dto/lecturer.dto';
+import {
+  LecturerUpdateAccountDto,
+  UpdateLecturerDto,
+} from 'src/admin/dto/lecturer.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Role, RoleGuard } from 'common';
 import { GetUser } from 'common/decorator';
 import type { Lecturer } from '@prisma/client';
-import { LecturerUpdateAccountDto } from '../dto/lecture.dto';
 
 @Controller('lecturer')
 export class LecturerController {

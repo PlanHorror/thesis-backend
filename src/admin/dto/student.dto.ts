@@ -139,3 +139,51 @@ export class UpdateStudentDto {
   @IsOptional()
   active: boolean;
 }
+
+export class StudentUpdateAccountDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  fullName: string;
+
+  @IsBoolean()
+  @IsNotEmpty()
+  @IsOptional()
+  gender: boolean;
+
+  @IsDateString()
+  @Transform(({ value }) => new Date(value).toISOString())
+  @IsNotEmpty()
+  @IsOptional()
+  birthDate: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  citizenId: string;
+
+  @IsPhoneNumber('VN')
+  @IsNotEmpty()
+  @IsOptional()
+  phone: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  address: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  oldPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  password: string;
+}

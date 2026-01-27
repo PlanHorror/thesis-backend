@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { Lecturer, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { LecturerUpdateAccountDto } from '../dto/lecture.dto';
 import * as bcrypt from 'bcrypt';
+import { LecturerUpdateAccountDto } from 'src/admin/dto/lecturer.dto';
 @Injectable()
 export class LecturerService {
   private logger = new Logger(LecturerService.name);

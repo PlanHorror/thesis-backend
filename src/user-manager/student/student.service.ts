@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { Prisma, Student } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { StudentUpdateAccountDto } from 'src/admin/dto/student.dto';
 
 @Injectable()
 export class StudentService {
@@ -207,6 +209,33 @@ export class StudentService {
       }
       this.logger.error('Failed to delete accounts', error.stack);
       throw new BadRequestException('Failed to delete accounts');
+    }
+  }
+
+  async studentUpdateAccount(data: StudentUpdateAccountDto, student: Student) {
+    try {
+      const { password, oldPassword, ...updateData } = data;
+      let hashedPassword: string | null = null;
+      if (password) {
+        if (
+          !oldPassword ||
+          bcrypt.compareSync(oldPassword, student.password) === false
+        ) {
+          throw new BadRequestException('Old password is incorrect');
+        }
+        const salt = await bcrypt.genSalt();
+        hashedPassword = await bcrypt.hash(password, salt);
+      }
+      return await this.prismaService.student.update({
+        where: { id: student.id },
+        data: {
+          ...updateData,
+          ...(hashedPassword && { password: hashedPassword }),
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to update student account', error.stack);
+      throw new BadRequestException('Failed to update student account');
     }
   }
 }
