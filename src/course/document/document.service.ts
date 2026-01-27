@@ -189,4 +189,129 @@ export class DocumentService {
     }
     return { message: 'Documents deleted successfully' };
   }
+
+  async createForLecturer(
+    title: string,
+    courseId: string,
+    lecturerId: string,
+  ): Promise<CourseDocument> {
+    try {
+      // Verify the course exists and lecturer has access in one query
+      const course = await this.prisma.course.findFirst({
+        where: {
+          id: courseId,
+          lecturers: {
+            some: {
+              id: lecturerId,
+            },
+          },
+        },
+      });
+
+      if (!course) {
+        throw new NotFoundException(
+          'Course not found or you are not authorized to add documents to this course',
+        );
+      }
+
+      return await this.prisma.courseDocument.create({
+        data: {
+          title,
+          courseId,
+          path: '', // Temporary empty path
+        },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to create document for lecturer', error.stack);
+      throw new BadRequestException('Failed to create document');
+    }
+  }
+
+  async updateForLecturer(
+    id: string,
+    title: string,
+    lecturerId: string,
+  ): Promise<CourseDocument> {
+    try {
+      // First, get the document to find its courseId
+      const document = await this.prisma.courseDocument.findUnique({
+        where: { id },
+      });
+
+      if (!document) {
+        throw new NotFoundException('Document not found');
+      }
+
+      // Update only if the course belongs to the lecturer - single query
+      const updatedDocument = await this.prisma.courseDocument.updateMany({
+        where: {
+          id,
+          course: {
+            lecturers: {
+              some: {
+                id: lecturerId,
+              },
+            },
+          },
+        },
+        data: {
+          title,
+        },
+      });
+
+      if (updatedDocument.count === 0) {
+        throw new NotFoundException(
+          'Course not found or you are not authorized to update documents of this course',
+        );
+      }
+
+      return await this.prisma.courseDocument.findUnique({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to update document for lecturer', error.stack);
+      throw new BadRequestException('Failed to update document');
+    }
+  }
+
+  async deleteForLecturer(
+    id: string,
+    lecturerId: string,
+  ): Promise<{ message: string }> {
+    try {
+      // Delete only if the course belongs to the lecturer - single query
+      const deletedDocument = await this.prisma.courseDocument.deleteMany({
+        where: {
+          id,
+          course: {
+            lecturers: {
+              some: {
+                id: lecturerId,
+              },
+            },
+          },
+        },
+      });
+
+      if (deletedDocument.count === 0) {
+        throw new NotFoundException(
+          'Document not found or you are not authorized to delete this document',
+        );
+      }
+
+      return { message: 'Document deleted successfully' };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to delete document for lecturer', error.stack);
+      throw new BadRequestException('Failed to delete document');
+    }
+  }
 }

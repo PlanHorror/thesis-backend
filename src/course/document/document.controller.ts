@@ -1,9 +1,20 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { GetUser } from 'common/decorator/getuser.decorator';
 import { AuthGuard } from '@nestjs/passport';
-import { Role } from 'common';
+import { Role, RoleGuard } from 'common';
 import { Lecturer } from '@prisma/client';
+import { CreateDocumentDto, UpdateDocumentDto } from './dto/document.dto';
 
 @Controller('document')
 export class DocumentController {
@@ -20,5 +31,34 @@ export class DocumentController {
   @Get(':id')
   async getDocumentById(@Query('id') id: string) {
     return this.documentService.findById(id);
+  }
+
+  @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.LECTURER]))
+  @Post('create')
+  async createDocument(
+    @Body() data: CreateDocumentDto,
+    @GetUser() lecturer: Lecturer,
+  ) {
+    return this.documentService.createForLecturer(
+      data.title,
+      data.courseId,
+      lecturer.id,
+    );
+  }
+
+  @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.LECTURER]))
+  @Patch('update/:id')
+  async updateDocument(
+    @Param('id') id: string,
+    @Body() data: UpdateDocumentDto,
+    @GetUser() lecturer: Lecturer,
+  ) {
+    return this.documentService.updateForLecturer(id, data.title, lecturer.id);
+  }
+
+  @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.LECTURER]))
+  @Delete('delete/:id')
+  async deleteDocument(@Param('id') id: string, @GetUser() lecturer: Lecturer) {
+    return this.documentService.deleteForLecturer(id, lecturer.id);
   }
 }
