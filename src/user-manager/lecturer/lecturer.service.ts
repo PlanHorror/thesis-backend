@@ -7,7 +7,8 @@ import {
 } from '@nestjs/common';
 import { Lecturer, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-
+import { LecturerUpdateAccountDto } from '../dto/lecture.dto';
+import * as bcrypt from 'bcrypt';
 @Injectable()
 export class LecturerService {
   private logger = new Logger(LecturerService.name);
@@ -159,6 +160,36 @@ export class LecturerService {
       }
       this.logger.error('Failed to delete lecturers', error.stack);
       throw new BadRequestException('Failed to delete lecturers');
+    }
+  }
+
+  async lecturerUpdateAccount(
+    data: LecturerUpdateAccountDto,
+    lecturer: Lecturer,
+  ) {
+    try {
+      const { password, oldPassword, ...updateData } = data;
+      let hashedPassword: string | null = null;
+      if (password) {
+        if (
+          !oldPassword ||
+          bcrypt.compareSync(oldPassword, lecturer.password) === false
+        ) {
+          throw new BadRequestException('Old password is incorrect');
+        }
+        const salt = await bcrypt.genSalt();
+        hashedPassword = await bcrypt.hash(password, salt);
+      }
+      return await this.prisma.lecturer.update({
+        where: { id: lecturer.id },
+        data: {
+          ...updateData,
+          ...(hashedPassword && { password: hashedPassword }),
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to update lecturer account', error.stack);
+      throw new BadRequestException('Failed to update lecturer account');
     }
   }
 }
