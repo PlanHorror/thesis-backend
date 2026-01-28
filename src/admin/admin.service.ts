@@ -53,6 +53,11 @@ import {
   CreateMultipleExamSchedulesDto,
   UpdateExamScheduleDto,
 } from './dto/exam-schedule.dto';
+import { NotificationService } from 'src/notification/notification.service';
+import {
+  CreateNotificationDto,
+  UpdateNotificationDto,
+} from './dto/notification.dto';
 
 @Injectable()
 export class AdminService {
@@ -69,6 +74,7 @@ export class AdminService {
     private readonly enrollmentService: EnrollmentService,
     private readonly sessionService: SessionService,
     private readonly examScheduleService: ExamScheduleService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -912,6 +918,83 @@ export class AdminService {
       return await this.examScheduleService.deleteMany(ids);
     } catch (error) {
       this.logger.error('Failed to delete exam schedules', error);
+      throw error;
+    }
+  }
+
+  // ==================== Notification Methods ====================
+
+  async getAllNotificationsService() {
+    try {
+      return await this.notificationService.findAll();
+    } catch (error) {
+      this.logger.error('Failed to retrieve notifications', error);
+      throw error;
+    }
+  }
+
+  async getNotificationByIdService(id: string) {
+    try {
+      return await this.notificationService.findById(id);
+    } catch (error) {
+      this.logger.error('Failed to retrieve notification', error);
+      throw error;
+    }
+  }
+
+  async getNotificationsByUserService(lecturerId?: string, studentId?: string) {
+    try {
+      return await this.notificationService.findByUser(lecturerId, studentId);
+    } catch (error) {
+      this.logger.error('Failed to retrieve notifications', error);
+      throw error;
+    }
+  }
+
+  async createNotificationService(data: CreateNotificationDto) {
+    try {
+      const notificationData: Prisma.NotificationCreateInput = {
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        ...(data.studentId && { student: { connect: { id: data.studentId } } }),
+        ...(data.lecturerId && {
+          lecturer: { connect: { id: data.lecturerId } },
+        }),
+      };
+      return await this.notificationService.create(notificationData);
+    } catch (error) {
+      this.logger.error('Failed to create notification', error);
+      throw error;
+    }
+  }
+
+  async updateNotificationService(id: string, data: UpdateNotificationDto) {
+    try {
+      const updateData: Prisma.NotificationUpdateInput = {};
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.message !== undefined) updateData.message = data.message;
+      if (data.type !== undefined) updateData.type = data.type;
+      if (data.isRead !== undefined) updateData.isRead = data.isRead;
+      if (data.studentId !== undefined) {
+        updateData.student = { connect: { id: data.studentId } };
+      }
+      if (data.lecturerId !== undefined) {
+        updateData.lecturer = { connect: { id: data.lecturerId } };
+      }
+
+      return await this.notificationService.update(id, updateData);
+    } catch (error) {
+      this.logger.error('Failed to update notification', error);
+      throw error;
+    }
+  }
+
+  async deleteNotificationService(id: string) {
+    try {
+      return await this.notificationService.delete(id);
+    } catch (error) {
+      this.logger.error('Failed to delete notification', error);
       throw error;
     }
   }

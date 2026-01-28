@@ -11,6 +11,7 @@ import { CourseModule } from './course/course.module';
 import { SemesterModule } from './semester/semester.module';
 import { CourseSemesterController } from './admin/semester/course-semester/course-semester.controller';
 import { ExamScheduleModule } from './exam-schedule/exam-schedule.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ExamScheduleModule } from './exam-schedule/exam-schedule.module';
     CourseModule,
     SemesterModule,
     ExamScheduleModule,
+    NotificationModule,
   ],
   controllers: [AppController, CourseSemesterController],
   providers: [AppService, PrismaService],
