@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -15,7 +16,15 @@ export class ExamScheduleService {
   async findAll(includeCourseOnSemester = false): Promise<ExamSchedule[]> {
     return await this.prisma.examSchedule.findMany({
       include: {
-        courseOnSemester: includeCourseOnSemester,
+        courseOnSemester: includeCourseOnSemester
+          ? {
+              include: {
+                course: true,
+                semester: true,
+                lecturer: true,
+              },
+            }
+          : false,
       },
     });
   }
@@ -24,21 +33,71 @@ export class ExamScheduleService {
     id: string,
     includeCourseOnSemester = false,
   ): Promise<ExamSchedule> {
-    try {
-      const examSchedule = await this.prisma.examSchedule.findUnique({
-        where: { id },
-        include: {
-          courseOnSemester: includeCourseOnSemester,
-        },
-      });
-      if (!examSchedule) {
-        throw new NotFoundException('Exam schedule not found');
-      }
-      return examSchedule;
-    } catch (error) {
-      this.logger.error('Failed to retrieve exam schedule', error.stack);
+    const examSchedule = await this.prisma.examSchedule.findUnique({
+      where: { id },
+      include: {
+        courseOnSemester: includeCourseOnSemester
+          ? {
+              include: {
+                course: true,
+                semester: true,
+                lecturer: true,
+              },
+            }
+          : false,
+      },
+    });
+    if (!examSchedule) {
       throw new NotFoundException('Exam schedule not found');
     }
+    return examSchedule;
+  }
+
+  async findByStudentId(
+    studentId: string,
+    semesterId?: string,
+  ): Promise<ExamSchedule[]> {
+    const whereClause: Prisma.ExamScheduleWhereInput = {
+      courseOnSemester: {
+        enrollments: {
+          some: {
+            studentId,
+          },
+        },
+        ...(semesterId && { semesterId }),
+      },
+    };
+
+    return await this.prisma.examSchedule.findMany({
+      where: whereClause,
+      include: {
+        courseOnSemester: {
+          include: {
+            course: true,
+            semester: true,
+            lecturer: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findByLecturerId(lecturerId: string): Promise<ExamSchedule[]> {
+    return await this.prisma.examSchedule.findMany({
+      where: {
+        courseOnSemester: {
+          lecturerId,
+        },
+      },
+      include: {
+        courseOnSemester: {
+          include: {
+            course: true,
+            semester: true,
+          },
+        },
+      },
+    });
   }
 
   async findByCourseOnSemesterId(
@@ -62,6 +121,14 @@ export class ExamScheduleService {
     try {
       return await this.prisma.examSchedule.create({
         data,
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+              semester: true,
+            },
+          },
+        },
       });
     } catch (error) {
       if (error.code === 'P2025') {
@@ -74,6 +141,132 @@ export class ExamScheduleService {
       }
       this.logger.error('Failed to create exam schedule', error);
       throw new BadRequestException('Failed to create exam schedule');
+    }
+  }
+
+  async createByLecturer(
+    lecturerId: string,
+    courseOnSemesterId: string,
+    data: {
+      examDate?: string;
+      startTime?: Date;
+      endTime?: Date;
+      location?: string;
+      description?: string;
+    },
+  ): Promise<ExamSchedule> {
+    try {
+      // Create exam schedule only if lecturer owns the course (single query)
+      return await this.prisma.examSchedule.create({
+        data: {
+          courseOnSemester: {
+            connect: {
+              id: courseOnSemesterId,
+              lecturerId: lecturerId,
+            },
+          },
+          examDate: data.examDate,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          description: data.description,
+        },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+              semester: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'Course on semester not found or you are not authorized',
+        );
+      }
+      if (error.code === 'P2002') {
+        throw new BadRequestException(
+          'Exam schedule already exists for this course semester',
+        );
+      }
+      this.logger.error('Failed to create exam schedule', error);
+      throw new BadRequestException('Failed to create exam schedule');
+    }
+  }
+
+  async updateByLecturer(
+    lecturerId: string,
+    id: string,
+    data: {
+      examDate?: string;
+      startTime?: Date;
+      endTime?: Date;
+      location?: string;
+      description?: string;
+    },
+  ): Promise<ExamSchedule> {
+    try {
+      // Update exam schedule only if lecturer owns the course (single query)
+      const result = await this.prisma.examSchedule.updateMany({
+        where: {
+          id,
+          courseOnSemester: {
+            lecturerId,
+          },
+        },
+        data: {
+          examDate: data.examDate,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          description: data.description,
+        },
+      });
+
+      if (result.count === 0) {
+        throw new NotFoundException('Exam schedule not found');
+      }
+
+      return await this.findById(id, true);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to update exam schedule', error);
+      throw new BadRequestException('Failed to update exam schedule');
+    }
+  }
+
+  async deleteByLecturer(
+    lecturerId: string,
+    id: string,
+  ): Promise<{ count: number }> {
+    try {
+      // Delete exam schedule only if lecturer owns the course (single query)
+      const result = await this.prisma.examSchedule.deleteMany({
+        where: {
+          id,
+          courseOnSemester: {
+            lecturerId,
+          },
+        },
+      });
+
+      if (result.count === 0) {
+        throw new NotFoundException(
+          'Exam schedule not found or you are not authorized',
+        );
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to delete exam schedule', error);
+      throw new BadRequestException('Failed to delete exam schedule');
     }
   }
 
