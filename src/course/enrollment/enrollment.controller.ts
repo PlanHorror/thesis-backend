@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { EnrollmentService } from './enrollment.service';
 import { AuthGuard } from '@nestjs/passport';

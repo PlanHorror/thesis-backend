@@ -18,6 +18,7 @@ import { EnrollmentController } from './course/enrollment/enrollment.controller'
 import { CourseSemesterController } from './semester/course-semester/course-semester.controller';
 import { EnrollmentModule } from 'src/course/enrollment/enrollment.module';
 import { SessionController } from './course/enrollment/session/session.controller';
+import { SessionModule } from 'src/course/enrollment/session/session.module';
 
 @Module({
   controllers: [
@@ -42,6 +43,7 @@ import { SessionController } from './course/enrollment/session/session.controlle
     SemesterModule,
     CourseSemesterModule,
     EnrollmentModule,
+    SessionModule,
   ],
 })
 export class AdminModule {}

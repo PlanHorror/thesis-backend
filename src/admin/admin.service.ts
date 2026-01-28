@@ -41,6 +41,12 @@ import {
   CreateCourseEnrollmentDto,
   UpdateCourseEnrollmentDto,
 } from './dto/course-enrollment.dto';
+import { SessionService } from 'src/course/enrollment/session/session.service';
+import {
+  CreateEnrollmentSessionDto,
+  CreateMultipleEnrollmentSessionsDto,
+  UpdateEnrollmentSessionDto,
+} from './dto/enrollment-session.dto';
 
 @Injectable()
 export class AdminService {
@@ -55,6 +61,7 @@ export class AdminService {
     private readonly semesterService: SemesterService,
     private readonly courseOnSemesterService: CourseSemesterService,
     private readonly enrollmentService: EnrollmentService,
+    private readonly sessionService: SessionService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -693,5 +700,106 @@ export class AdminService {
 
   async deleteManyEnrollmentsService(ids: string[]) {
     return await this.enrollmentService.deleteMany(ids);
+  }
+
+  // Enrollment Session Methods
+  async getAllEnrollmentSessionsService() {
+    try {
+      return await this.sessionService.findAll(true);
+    } catch (error) {
+      this.logger.error('Failed to retrieve enrollment sessions', error);
+      throw error;
+    }
+  }
+
+  async getEnrollmentSessionByIdService(id: string) {
+    try {
+      return await this.sessionService.findById(id, true);
+    } catch (error) {
+      this.logger.error('Failed to retrieve enrollment session', error);
+      throw error;
+    }
+  }
+
+  async getEnrollmentSessionsBySemesterIdService(semesterId: string) {
+    try {
+      return await this.sessionService.findBySemesterId(semesterId, true);
+    } catch (error) {
+      this.logger.error('Failed to retrieve enrollment sessions', error);
+      throw error;
+    }
+  }
+
+  async createEnrollmentSessionService(data: CreateEnrollmentSessionDto) {
+    try {
+      return await this.sessionService.create({
+        name: data.name,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        isActive: data.isActive ?? true,
+        semester: { connect: { id: data.semesterId } },
+      });
+    } catch (error) {
+      this.logger.error('Failed to create enrollment session', error);
+      throw error;
+    }
+  }
+
+  async createMultipleEnrollmentSessionsService(
+    data: CreateMultipleEnrollmentSessionsDto,
+  ) {
+    try {
+      const formattedSessions = data.sessions.map((session) => ({
+        name: session.name,
+        startDate: new Date(session.startDate),
+        endDate: new Date(session.endDate),
+        isActive: session.isActive ?? true,
+        semesterId: session.semesterId,
+      }));
+      return await this.sessionService.createMany(formattedSessions);
+    } catch (error) {
+      this.logger.error('Failed to create enrollment sessions', error);
+      throw error;
+    }
+  }
+
+  async updateEnrollmentSessionService(
+    id: string,
+    data: UpdateEnrollmentSessionDto,
+  ) {
+    try {
+      const updateData: Prisma.EnrollmentSessionUpdateInput = {};
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.startDate !== undefined)
+        updateData.startDate = new Date(data.startDate);
+      if (data.endDate !== undefined)
+        updateData.endDate = new Date(data.endDate);
+      if (data.isActive !== undefined) updateData.isActive = data.isActive;
+      if (data.semesterId !== undefined)
+        updateData.semester = { connect: { id: data.semesterId } };
+
+      return await this.sessionService.update(id, updateData);
+    } catch (error) {
+      this.logger.error('Failed to update enrollment session', error);
+      throw error;
+    }
+  }
+
+  async deleteEnrollmentSessionService(id: string) {
+    try {
+      return await this.sessionService.delete(id);
+    } catch (error) {
+      this.logger.error('Failed to delete enrollment session', error);
+      throw error;
+    }
+  }
+
+  async deleteMultipleEnrollmentSessionsService(ids: string[]) {
+    try {
+      return await this.sessionService.deleteMany(ids);
+    } catch (error) {
+      this.logger.error('Failed to delete enrollment sessions', error);
+      throw error;
+    }
   }
 }
