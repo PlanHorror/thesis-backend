@@ -47,6 +47,12 @@ import {
   CreateMultipleEnrollmentSessionsDto,
   UpdateEnrollmentSessionDto,
 } from './dto/enrollment-session.dto';
+import { ExamScheduleService } from 'src/exam-schedule/exam-schedule.service';
+import {
+  CreateExamScheduleDto,
+  CreateMultipleExamSchedulesDto,
+  UpdateExamScheduleDto,
+} from './dto/exam-schedule.dto';
 
 @Injectable()
 export class AdminService {
@@ -62,6 +68,7 @@ export class AdminService {
     private readonly courseOnSemesterService: CourseSemesterService,
     private readonly enrollmentService: EnrollmentService,
     private readonly sessionService: SessionService,
+    private readonly examScheduleService: ExamScheduleService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -799,6 +806,112 @@ export class AdminService {
       return await this.sessionService.deleteMany(ids);
     } catch (error) {
       this.logger.error('Failed to delete enrollment sessions', error);
+      throw error;
+    }
+  }
+
+  // ==================== Exam Schedule Methods ====================
+
+  async getAllExamSchedulesService(includeCourseOnSemester = false) {
+    try {
+      return await this.examScheduleService.findAll(includeCourseOnSemester);
+    } catch (error) {
+      this.logger.error('Failed to retrieve exam schedules', error);
+      throw error;
+    }
+  }
+
+  async getExamScheduleByIdService(
+    id: string,
+    includeCourseOnSemester = false,
+  ) {
+    try {
+      return await this.examScheduleService.findById(
+        id,
+        includeCourseOnSemester,
+      );
+    } catch (error) {
+      this.logger.error('Failed to retrieve exam schedule', error);
+      throw error;
+    }
+  }
+
+  async createExamScheduleService(data: CreateExamScheduleDto) {
+    try {
+      const examScheduleData: Prisma.ExamScheduleCreateInput = {
+        courseOnSemester: { connect: { id: data.courseOnSemesterId } },
+        examDate: data.examDate,
+        startTime: data.startTime ? new Date(data.startTime) : undefined,
+        endTime: data.endTime ? new Date(data.endTime) : undefined,
+        location: data.location,
+        description: data.description,
+      };
+      return await this.examScheduleService.create(examScheduleData);
+    } catch (error) {
+      this.logger.error('Failed to create exam schedule', error);
+      throw error;
+    }
+  }
+
+  async createMultipleExamSchedulesService(
+    data: CreateMultipleExamSchedulesDto,
+  ) {
+    try {
+      const examSchedules = data.examSchedules.map((schedule) => ({
+        courseOnSemesterId: schedule.courseOnSemesterId,
+        examDate: schedule.examDate,
+        startTime: schedule.startTime
+          ? new Date(schedule.startTime)
+          : undefined,
+        endTime: schedule.endTime ? new Date(schedule.endTime) : undefined,
+        location: schedule.location,
+        description: schedule.description,
+      }));
+      return await this.examScheduleService.createMany(examSchedules);
+    } catch (error) {
+      this.logger.error('Failed to create exam schedules', error);
+      throw error;
+    }
+  }
+
+  async updateExamScheduleService(id: string, data: UpdateExamScheduleDto) {
+    try {
+      const updateData: Prisma.ExamScheduleUpdateInput = {};
+      if (data.courseOnSemesterId !== undefined) {
+        updateData.courseOnSemester = {
+          connect: { id: data.courseOnSemesterId },
+        };
+      }
+      if (data.examDate !== undefined) updateData.examDate = data.examDate;
+      if (data.startTime !== undefined)
+        updateData.startTime = new Date(data.startTime);
+      if (data.endTime !== undefined)
+        updateData.endTime = new Date(data.endTime);
+      if (data.location !== undefined) updateData.location = data.location;
+      if (data.description !== undefined)
+        updateData.description = data.description;
+
+      return await this.examScheduleService.update(id, updateData);
+    } catch (error) {
+      this.logger.error('Failed to update exam schedule', error);
+      throw error;
+    }
+  }
+
+  async deleteExamScheduleService(id: string) {
+    try {
+      return await this.examScheduleService.delete(id);
+    } catch (error) {
+      this.logger.error('Failed to delete exam schedule', error);
+      throw error;
+    }
+  }
+
+  async deleteMultipleExamSchedulesService(ids: string[]) {
+    try {
+      return await this.examScheduleService.deleteMany(ids);
+    } catch (error) {
+      this.logger.error('Failed to delete exam schedules', error);
       throw error;
     }
   }

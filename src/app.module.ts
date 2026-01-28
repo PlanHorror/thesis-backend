@@ -10,6 +10,7 @@ import { DepartmentModule } from './department/department.module';
 import { CourseModule } from './course/course.module';
 import { SemesterModule } from './semester/semester.module';
 import { CourseSemesterController } from './admin/semester/course-semester/course-semester.controller';
+import { ExamScheduleModule } from './exam-schedule/exam-schedule.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CourseSemesterController } from './admin/semester/course-semester/cours
     DepartmentModule,
     CourseModule,
     SemesterModule,
+    ExamScheduleModule,
   ],
   controllers: [AppController, CourseSemesterController],
   providers: [AppService, PrismaService],

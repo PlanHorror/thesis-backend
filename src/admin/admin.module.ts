@@ -19,6 +19,8 @@ import { CourseSemesterController } from './semester/course-semester/course-seme
 import { EnrollmentModule } from 'src/course/enrollment/enrollment.module';
 import { SessionController } from './course/enrollment/session/session.controller';
 import { SessionModule } from 'src/course/enrollment/session/session.module';
+import { ExamScheduleController } from './exam-schedule/exam-schedule.controller';
+import { ExamScheduleModule } from 'src/exam-schedule/exam-schedule.module';
 
 @Module({
   controllers: [
@@ -31,6 +33,7 @@ import { SessionModule } from 'src/course/enrollment/session/session.module';
     EnrollmentController,
     CourseSemesterController,
     SessionController,
+    ExamScheduleController,
   ],
   providers: [AdminService, PrismaService],
   exports: [AdminService],
@@ -44,6 +47,7 @@ import { SessionModule } from 'src/course/enrollment/session/session.module';
     CourseSemesterModule,
     EnrollmentModule,
     SessionModule,
+    ExamScheduleModule,
   ],
 })
 export class AdminModule {}
