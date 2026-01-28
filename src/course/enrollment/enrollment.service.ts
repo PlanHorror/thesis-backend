@@ -25,6 +25,7 @@ export class EnrollmentService {
     includeLecturer = false,
     studentId?: string,
     courseOnSemesterId?: string,
+    lecturerId?: string,
   ) {
     if (
       !includeCourseOnSemester &&
@@ -34,6 +35,20 @@ export class EnrollmentService {
         'includeCourseOnSemester must be true if includeCourse, includeSemester, or includeLecturer is true',
       );
     }
+
+    // Validate lecturer assignment to course semester if lecturerId is provided
+    if (lecturerId && courseOnSemesterId) {
+      const courseOnSemester = await this.prisma.courseOnSemester.findUnique({
+        where: { id: courseOnSemesterId },
+        select: { lecturerId: true },
+      });
+      if (!courseOnSemester || courseOnSemester.lecturerId !== lecturerId) {
+        throw new BadRequestException(
+          'Lecturer is not assigned to this course semester',
+        );
+      }
+    }
+
     return await this.prisma.studentCourseEnrollment.findMany({
       include: {
         student: includeStudent,
