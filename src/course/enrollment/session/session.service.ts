@@ -138,4 +138,83 @@ export class SessionService {
       throw new BadRequestException('Failed to delete enrollment sessions');
     }
   }
+
+  // Public endpoints - for students and lecturers (only active sessions)
+  async findAllActive(includeSemester = false): Promise<EnrollmentSession[]> {
+    return await this.prisma.enrollmentSession.findMany({
+      where: { isActive: true },
+      include: {
+        semester: includeSemester,
+      },
+    });
+  }
+
+  async findByIdActive(
+    id: string,
+    includeSemester = false,
+  ): Promise<EnrollmentSession> {
+    try {
+      const session = await this.prisma.enrollmentSession.findUnique({
+        where: { id },
+        include: {
+          semester: includeSemester,
+        },
+      });
+      if (!session) {
+        throw new NotFoundException('Enrollment session not found');
+      }
+      if (!session.isActive) {
+        throw new NotFoundException('Enrollment session not found');
+      }
+      return session;
+    } catch (error) {
+      this.logger.error('Failed to retrieve enrollment session', error.stack);
+      throw new NotFoundException('Enrollment session not found');
+    }
+  }
+
+  async findBySemesterIdActive(
+    semesterId: string,
+    includeSemester = false,
+  ): Promise<EnrollmentSession[]> {
+    try {
+      return await this.prisma.enrollmentSession.findMany({
+        where: { semesterId, isActive: true },
+        include: {
+          semester: includeSemester,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to retrieve enrollment sessions', error.stack);
+      throw new NotFoundException('Enrollment sessions not found');
+    }
+  }
+
+  // Check if current time is within an active enrollment session
+  async isEnrollmentTimeValid(semesterId?: string): Promise<boolean> {
+    try {
+      const now = new Date();
+      const where: any = {
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      };
+
+      if (semesterId) {
+        where.semesterId = semesterId;
+      }
+
+      const validSession = await this.prisma.enrollmentSession.findFirst({
+        where,
+      });
+
+      return validSession !== null;
+    } catch (error) {
+      this.logger.error(
+        'Failed to check enrollment time validity',
+        error.stack,
+      );
+      return false;
+    }
+  }
 }

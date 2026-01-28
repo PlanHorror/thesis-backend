@@ -8,6 +8,7 @@ import {
 import { Prisma, Student } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CourseSemesterService } from 'src/semester/course-semester/course-semester.service';
+import { SessionService } from './session/session.service';
 
 @Injectable()
 export class EnrollmentService {
@@ -15,6 +16,7 @@ export class EnrollmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly courseSemesterService: CourseSemesterService,
+    private readonly sessionService: SessionService,
   ) {}
 
   async findAll(
@@ -219,6 +221,19 @@ export class EnrollmentService {
   }
 
   async enrollStudentInCourse(student: Student, courseOnSemesterId: string) {
+    // Check if current time is valid for enrollment
+    const courseOnSemester =
+      await this.courseSemesterService.findOne(courseOnSemesterId);
+    const isEnrollmentTimeValid =
+      await this.sessionService.isEnrollmentTimeValid(
+        courseOnSemester.semesterId,
+      );
+    if (!isEnrollmentTimeValid) {
+      throw new BadRequestException(
+        'Enrollment is not available at this time. Please try during the enrollment period.',
+      );
+    }
+
     if (await this.checkDuplicateEnrollment(student.id, courseOnSemesterId)) {
       throw new ConflictException(
         `Student with ID ${student.id} is already enrolled in the course or has a time conflict.`,
@@ -231,6 +246,18 @@ export class EnrollmentService {
   }
 
   async unenrollStudentFromCourse(student: Student, enrollmentId: string) {
+    // Check if current time is valid for unenrollment
+    const enrollment = await this.findOne(enrollmentId, false, true);
+    const isEnrollmentTimeValid =
+      await this.sessionService.isEnrollmentTimeValid(
+        enrollment.courseOnSemester.semesterId,
+      );
+    if (!isEnrollmentTimeValid) {
+      throw new BadRequestException(
+        'Unenrollment is not available at this time. Please try during the enrollment period.',
+      );
+    }
+
     const deleteResult = await this.prisma.studentCourseEnrollment.deleteMany({
       where: {
         id: enrollmentId,
