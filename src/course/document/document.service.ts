@@ -10,6 +10,7 @@ import {
   DocumentUpdate,
   generateFileName,
   saveFile,
+  deleteFile,
 } from 'common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -37,10 +38,12 @@ export class DocumentService {
     }
   }
 
-  async findByCourseId(courseId: string): Promise<CourseDocument[]> {
+  async findByCourseOnSemesterId(
+    courseOnSemesterId: string,
+  ): Promise<CourseDocument[]> {
     try {
       return await this.prisma.courseDocument.findMany({
-        where: { courseId },
+        where: { courseOnSemesterId },
       });
     } catch (error) {
       this.logger.error('Failed to retrieve documents', error.stack);
@@ -64,7 +67,7 @@ export class DocumentService {
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(
-          `Course with ID ${data.course?.connect?.id} not found`,
+          `CourseOnSemester with ID ${data.courseOnSemester?.connect?.id} not found`,
         );
       }
       this.logger.error('Failed to create document', error.stack);
@@ -173,15 +176,17 @@ export class DocumentService {
     return { message: 'Documents deleted successfully' };
   }
 
-  async deleteByCourseId(courseId: string): Promise<{ message: string }> {
+  async deleteByCourseOnSemesterId(
+    courseOnSemesterId: string,
+  ): Promise<{ message: string }> {
     try {
       await this.prisma.courseDocument.deleteMany({
-        where: { courseId },
+        where: { courseOnSemesterId },
       });
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(
-          `No documents found for course ID ${courseId}`,
+          `No documents found for courseOnSemester ID ${courseOnSemesterId}`,
         );
       }
       this.logger.error('Failed to delete documents by course ID', error.stack);
@@ -192,38 +197,33 @@ export class DocumentService {
 
   async createForLecturer(
     title: string,
-    courseId: string,
+    courseOnSemesterId: string,
     lecturerId: string,
+    file: Express.Multer.File,
   ): Promise<CourseDocument> {
     try {
-      // Verify the course exists and lecturer has access in one query
-      const course = await this.prisma.course.findFirst({
-        where: {
-          id: courseId,
-          lecturers: {
-            some: {
-              id: lecturerId,
+      // Generate file path and save file
+      const path = `attachments/${generateFileName(file)}`;
+      await saveFile(file, path);
+
+      // Create document with single query that validates courseOnSemester belongs to lecturer
+      return await this.prisma.courseDocument.create({
+        data: {
+          title,
+          path,
+          courseOnSemester: {
+            connect: {
+              id: courseOnSemesterId,
+              lecturerId: lecturerId,
             },
           },
         },
       });
-
-      if (!course) {
-        throw new NotFoundException(
-          'Course not found or you are not authorized to add documents to this course',
-        );
-      }
-
-      return await this.prisma.courseDocument.create({
-        data: {
-          title,
-          courseId,
-          path: '', // Temporary empty path
-        },
-      });
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'CourseOnSemester not found or you are not authorized to add documents to this course',
+        );
       }
       this.logger.error('Failed to create document for lecturer', error.stack);
       throw new BadRequestException('Failed to create document');
@@ -234,42 +234,28 @@ export class DocumentService {
     id: string,
     title: string,
     lecturerId: string,
+    file?: Express.Multer.File,
   ): Promise<CourseDocument> {
     try {
-      // First, get the document to find its courseId
-      const document = await this.prisma.courseDocument.findUnique({
-        where: { id },
-      });
-
-      if (!document) {
-        throw new NotFoundException('Document not found');
+      // Handle file if provided
+      let path: string | undefined;
+      if (file) {
+        path = `attachments/${generateFileName(file)}`;
+        await saveFile(file, path);
       }
 
-      // Update only if the course belongs to the lecturer - single query
-      const updatedDocument = await this.prisma.courseDocument.updateMany({
+      // Update only if the courseOnSemester belongs to the lecturer - single query
+      return await this.prisma.courseDocument.update({
         where: {
           id,
-          course: {
-            lecturers: {
-              some: {
-                id: lecturerId,
-              },
-            },
+          courseOnSemester: {
+            lecturerId: lecturerId,
           },
         },
         data: {
           title,
+          ...(path && { path }),
         },
-      });
-
-      if (updatedDocument.count === 0) {
-        throw new NotFoundException(
-          'Course not found or you are not authorized to update documents of this course',
-        );
-      }
-
-      return await this.prisma.courseDocument.findUnique({
-        where: { id },
       });
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -285,25 +271,29 @@ export class DocumentService {
     lecturerId: string,
   ): Promise<{ message: string }> {
     try {
-      // Delete only if the course belongs to the lecturer - single query
-      const deletedDocument = await this.prisma.courseDocument.deleteMany({
+      // Get document first to retrieve file path
+      const document = await this.prisma.courseDocument.findFirst({
         where: {
           id,
-          course: {
-            lecturers: {
-              some: {
-                id: lecturerId,
-              },
-            },
+          courseOnSemester: {
+            lecturerId: lecturerId,
           },
         },
       });
 
-      if (deletedDocument.count === 0) {
+      if (!document) {
         throw new NotFoundException(
           'Document not found or you are not authorized to delete this document',
         );
       }
+
+      // Delete file from filesystem
+      await deleteFile(document.path);
+
+      // Delete document from database
+      await this.prisma.courseDocument.delete({
+        where: { id },
+      });
 
       return { message: 'Document deleted successfully' };
     } catch (error) {

@@ -12,29 +12,20 @@ export class CourseService {
   private readonly logger = new Logger(CourseService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(
-    includeDepartment = false,
-    includeDocuments = false,
-  ): Promise<Course[]> {
+  async findAll(includeDepartment = false): Promise<Course[]> {
     return this.prisma.course.findMany({
       include: {
         department: includeDepartment,
-        documents: includeDocuments,
       },
     });
   }
 
-  async findOne(
-    id: string,
-    includeDepartment = false,
-    includeDocuments = false,
-  ): Promise<Course> {
+  async findOne(id: string, includeDepartment = false): Promise<Course> {
     try {
       const course = await this.prisma.course.findUnique({
         where: { id },
         include: {
           department: includeDepartment,
-          documents: includeDocuments,
         },
       });
       if (!course) {
@@ -49,14 +40,12 @@ export class CourseService {
 
   async findByDepartmentId(
     departmentId: string,
-    includeDocuments = false,
     includeDepartment = false,
   ): Promise<Course[]> {
     try {
       return this.prisma.course.findMany({
         where: { departmentId },
         include: {
-          documents: includeDocuments,
           department: includeDepartment,
         },
       });

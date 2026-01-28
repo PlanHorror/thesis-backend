@@ -32,10 +32,6 @@ export class CreateCourseDto {
   @IsNotEmpty()
   @Transform(({ value }) => Number(value))
   credits: number;
-
-  @ValidateNested({ each: true })
-  @Type(() => CreateCourseDocumentDto)
-  courseDocuments: CreateCourseDocumentDto[];
 }
 
 export class UpdateCourseDto {
@@ -64,21 +60,6 @@ export class UpdateCourseDto {
   @IsOptional()
   @Transform(({ value }) => Number(value))
   credits: number;
-
-  @ValidateNested({ each: true })
-  @Type(() => CreateCourseDocumentDto)
-  @IsOptional()
-  createDocuments: CreateCourseDocumentDto[];
-
-  @ValidateNested({ each: true })
-  @Type(() => UpdateCourseDocumentDto)
-  @IsOptional()
-  updateDocuments: UpdateCourseDocumentDto[];
-
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  deleteDocumentIds: string[];
 }
 
 export class CreateCourseDocumentDto {

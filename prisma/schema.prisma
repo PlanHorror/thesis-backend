@@ -103,14 +103,13 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  documents   CourseDocument[]
   courseOnSemesters CourseOnSemester[]
 }
 
 model CourseDocument {
   id        String   @id @default(cuid())
-  course    Course   @relation(fields: [courseId], references: [id])
-  courseId  String
+  courseOnSemester CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
+  courseOnSemesterId String
   title     String
   path      String   @unique
   url       String?
@@ -149,6 +148,7 @@ model CourseOnSemester {
 
   @@unique([courseId, semesterId])
   enrollments StudentCourseEnrollment[]
+  documents   CourseDocument[]
   examSchedule ExamSchedule?
 }
 

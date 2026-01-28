@@ -7,7 +7,10 @@ import {
   Post,
   Put,
   Query,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { isBoolean, isString } from 'class-validator';
 import { AdminService } from 'src/admin/admin.service';
 import { CourseOnSemesterDto } from 'src/admin/dto/semester.dto';
@@ -36,22 +39,28 @@ export class CourseSemesterController {
   }
 
   @Post('create')
+  @UseInterceptors(AnyFilesInterceptor())
   async createCourseSemester(
     @Body() createCourseSemesterDto: CourseOnSemesterDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     return this.adminService.createCourseToSemesterService(
       createCourseSemesterDto,
+      files,
     );
   }
 
   @Put('update/:id')
+  @UseInterceptors(AnyFilesInterceptor())
   async updateCourseSemester(
     @Param('id') id: string,
     @Body() updateCourseSemesterDto: CourseOnSemesterDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     return this.adminService.updateCourseOnSemesterService(
       id,
       updateCourseSemesterDto,
+      files,
     );
   }
 

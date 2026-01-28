@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDate,
   IsNotEmpty,
   IsNumber,
@@ -8,8 +9,10 @@ import {
   Matches,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { IsLaterTime } from 'common';
+import { CreateCourseDocumentDto, UpdateCourseDocumentDto } from './course.dto';
 
 export class CreateSemesterDto {
   @IsString()
@@ -81,4 +84,24 @@ export class CourseOnSemesterDto {
   @IsNotEmpty()
   @IsOptional()
   location: string;
+
+  @ValidateNested({ each: true })
+  @Type(() => CreateCourseDocumentDto)
+  @IsOptional()
+  courseDocuments: CreateCourseDocumentDto[];
+
+  @ValidateNested({ each: true })
+  @Type(() => CreateCourseDocumentDto)
+  @IsOptional()
+  createDocuments: CreateCourseDocumentDto[];
+
+  @ValidateNested({ each: true })
+  @Type(() => UpdateCourseDocumentDto)
+  @IsOptional()
+  updateDocuments: UpdateCourseDocumentDto[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  deleteDocumentIds: string[];
 }

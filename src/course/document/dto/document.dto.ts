@@ -7,7 +7,7 @@ export class CreateDocumentDto {
 
   @IsString()
   @IsNotEmpty()
-  courseId: string;
+  courseOnSemesterId: string;
 }
 
 export class UpdateDocumentDto {

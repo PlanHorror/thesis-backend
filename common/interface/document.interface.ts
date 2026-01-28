@@ -1,6 +1,6 @@
 export interface DocumentCreate {
   title: string;
-  courseId: string;
+  courseOnSemesterId: string;
   file: Express.Multer.File;
 }
 

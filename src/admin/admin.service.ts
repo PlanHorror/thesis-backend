@@ -351,122 +351,42 @@ export class AdminService {
    * Admin services methods for managing courses
    */
 
-  async getAllCoursesService(
-    includeDepartment = false,
-    includeDocuments = false,
-  ) {
-    return await this.courseService.findAll(
-      includeDepartment,
-      includeDocuments,
-    );
+  async getAllCoursesService(includeDepartment = false) {
+    return await this.courseService.findAll(includeDepartment);
   }
 
   async getAllCoursesByDepartmentIdService(
     departmentId: string,
-    includeDocuments = false,
     includeDepartment = false,
   ) {
     return await this.courseService.findByDepartmentId(
       departmentId,
-      includeDocuments,
       includeDepartment,
     );
   }
 
-  async getCourseByIdService(
-    id: string,
-    includeDocuments = false,
-    includeDepartment = false,
-  ) {
-    return await this.courseService.findOne(
-      id,
-      includeDocuments,
-      includeDepartment,
-    );
+  async getCourseByIdService(id: string, includeDepartment = false) {
+    return await this.courseService.findOne(id, includeDepartment);
   }
 
-  async createCourseService(
-    data: CreateCourseDto,
-    files: Express.Multer.File[],
-  ) {
-    const { courseDocuments, ...courseData } = data;
+  async createCourseService(data: CreateCourseDto) {
     const createdCourse = await this.courseService.create({
-      ...courseData,
+      ...data,
       department: { connect: { id: data.departmentId } },
     });
-    if (courseDocuments && courseDocuments.length > 0) {
-      const documentsData = courseDocuments.map((doc) => {
-        const file = files.find((file) => file.fieldname === doc.id.toString());
-        if (!file) {
-          throw new BadRequestException(
-            `File for document ${doc.title} not found`,
-          );
-        }
-        return {
-          ...doc,
-          courseId: createdCourse.id,
-          file,
-        };
-      });
-      await this.documentService.createMany(documentsData);
-    }
     return {
       message: 'Course created successfully',
     };
   }
 
-  async updateCourseService(
-    id: string,
-    data: UpdateCourseDto,
-    files: Express.Multer.File[],
-  ) {
-    const { updateDocuments, createDocuments, departmentId, ...courseData } =
-      data;
-    await Promise.all([
-      this.courseService.update(id, {
-        ...courseData,
-        ...(departmentId && {
-          department: { connect: { id: departmentId } },
-        }),
+  async updateCourseService(id: string, data: UpdateCourseDto) {
+    const { departmentId, ...courseData } = data;
+    await this.courseService.update(id, {
+      ...courseData,
+      ...(departmentId && {
+        department: { connect: { id: departmentId } },
       }),
-      ...(createDocuments && createDocuments.length > 0
-        ? [
-            this.documentService.createMany(
-              createDocuments.map((doc) => {
-                const file = files.find(
-                  (file) => file.fieldname === doc.id.toString(),
-                );
-                if (!file) {
-                  throw new BadRequestException(
-                    `File for document ${doc.title} not found`,
-                  );
-                }
-                return {
-                  ...doc,
-                  courseId: id,
-                  file,
-                };
-              }),
-            ),
-          ]
-        : []),
-      ...(updateDocuments && updateDocuments.length > 0
-        ? [
-            this.documentService.updateMany(
-              updateDocuments.map((doc) => ({
-                id: doc.id,
-                title: doc.title,
-                file: files.find(
-                  (file) => file.fieldname === doc.id.toString(),
-                ),
-              })),
-            ),
-          ]
-        : []),
-      ...(data.deleteDocumentIds && data.deleteDocumentIds.length > 0
-        ? [this.documentService.deleteMany(data.deleteDocumentIds)]
-        : []),
-    ]);
+    });
     return {
       message: 'Course updated successfully',
     };
@@ -485,21 +405,28 @@ export class AdminService {
    */
 
   async getAllSemestersService(
-    includeCourses = false,
-    includeSemesters = false,
+    includeCoursesOnSemester = false,
+    includeDocuments = false,
+    includeCourse = false,
   ) {
-    return await this.semesterService.findAll(includeCourses, includeSemesters);
+    return await this.semesterService.findAll(
+      includeCoursesOnSemester,
+      includeDocuments,
+      includeCourse,
+    );
   }
 
   async getSemesterByIdService(
     id: string,
-    includeCourses = false,
-    includeSemesters = false,
+    includeCoursesOnSemester = false,
+    includeDocuments = false,
+    includeCourse = false,
   ) {
-    return await this.courseService.findOne(
+    return await this.semesterService.findById(
       id,
-      includeCourses,
-      includeSemesters,
+      includeCoursesOnSemester,
+      includeDocuments,
+      includeCourse,
     );
   }
 
@@ -549,8 +476,17 @@ export class AdminService {
     );
   }
 
-  async createCourseToSemesterService(data: CourseOnSemesterDto) {
-    const { semesterId, courseId, lecturerId, ...courseOnSemesterData } = data;
+  async createCourseToSemesterService(
+    data: CourseOnSemesterDto,
+    files: Express.Multer.File[],
+  ) {
+    const {
+      semesterId,
+      courseId,
+      lecturerId,
+      courseDocuments,
+      ...courseOnSemesterData
+    } = data;
     if (
       await this.prisma.courseOnSemester.findFirst({
         where: {
@@ -565,16 +501,47 @@ export class AdminService {
         `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${courseOnSemesterData.dayOfWeek} between ${courseOnSemesterData.startTime} and ${courseOnSemesterData.endTime}`,
       );
     }
-    return await this.courseOnSemesterService.create({
+    const createdCourseOnSemester = await this.courseOnSemesterService.create({
       ...courseOnSemesterData,
       semester: { connect: { id: semesterId } },
       course: { connect: { id: courseId } },
       lecturer: { connect: { id: lecturerId } },
     });
+
+    if (courseDocuments && courseDocuments.length > 0) {
+      const documentsData = courseDocuments.map((doc) => {
+        const file = files.find((file) => file.fieldname === doc.id.toString());
+        if (!file) {
+          throw new BadRequestException(
+            `File for document ${doc.title} not found`,
+          );
+        }
+        return {
+          ...doc,
+          courseOnSemesterId: createdCourseOnSemester.id,
+          file,
+        };
+      });
+      await this.documentService.createMany(documentsData);
+    }
+
+    return createdCourseOnSemester;
   }
 
-  async updateCourseOnSemesterService(id: string, data: CourseOnSemesterDto) {
-    const { semesterId, courseId, lecturerId, ...courseOnSemesterData } = data;
+  async updateCourseOnSemesterService(
+    id: string,
+    data: CourseOnSemesterDto,
+    files: Express.Multer.File[],
+  ) {
+    const {
+      semesterId,
+      courseId,
+      lecturerId,
+      updateDocuments,
+      createDocuments,
+      deleteDocumentIds,
+      ...courseOnSemesterData
+    } = data;
     if (
       await this.prisma.courseOnSemester.findFirst({
         where: {
@@ -590,12 +557,56 @@ export class AdminService {
         `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${courseOnSemesterData.dayOfWeek} between ${courseOnSemesterData.startTime} and ${courseOnSemesterData.endTime}`,
       );
     }
-    return await this.courseOnSemesterService.update(id, {
-      ...courseOnSemesterData,
-      semester: { connect: { id: semesterId } },
-      course: { connect: { id: courseId } },
-      lecturer: { connect: { id: lecturerId } },
-    });
+
+    await Promise.all([
+      this.courseOnSemesterService.update(id, {
+        ...courseOnSemesterData,
+        semester: { connect: { id: semesterId } },
+        course: { connect: { id: courseId } },
+        lecturer: { connect: { id: lecturerId } },
+      }),
+      ...(createDocuments && createDocuments.length > 0
+        ? [
+            this.documentService.createMany(
+              createDocuments.map((doc) => {
+                const file = files.find(
+                  (file) => file.fieldname === doc.id.toString(),
+                );
+                if (!file) {
+                  throw new BadRequestException(
+                    `File for document ${doc.title} not found`,
+                  );
+                }
+                return {
+                  ...doc,
+                  courseOnSemesterId: id,
+                  file,
+                };
+              }),
+            ),
+          ]
+        : []),
+      ...(updateDocuments && updateDocuments.length > 0
+        ? [
+            this.documentService.updateMany(
+              updateDocuments.map((doc) => ({
+                id: doc.id,
+                title: doc.title,
+                file: files.find(
+                  (file) => file.fieldname === doc.id.toString(),
+                ),
+              })),
+            ),
+          ]
+        : []),
+      ...(deleteDocumentIds && deleteDocumentIds.length > 0
+        ? [this.documentService.deleteMany(deleteDocumentIds)]
+        : []),
+    ]);
+
+    return {
+      message: 'Course on semester updated successfully',
+    };
   }
 
   async deleteCourseFromSemesterService(id: string) {

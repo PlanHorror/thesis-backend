@@ -11,24 +11,26 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class SemesterService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(includeCourses = false, includeDocuments = false) {
-    if (includeDocuments && !includeCourses) {
+  async findAll(
+    includeCoursesOnSemester = false,
+    includeDocuments = false,
+    includeCourse = false,
+  ) {
+    if (
+      (includeDocuments && !includeCoursesOnSemester) ||
+      (includeCourse && !includeCoursesOnSemester)
+    ) {
       throw new BadRequestException(
-        'Cannot include documents without including courses',
+        'Cannot include documents without including courses on semester',
       );
     }
     return await this.prisma.semester.findMany({
       include: {
-        courseOnSemesters: includeCourses
+        courseOnSemesters: includeCoursesOnSemester
           ? {
               include: {
-                course: includeDocuments
-                  ? {
-                      include: {
-                        documents: true,
-                      },
-                    }
-                  : true,
+                course: includeCourse,
+                documents: includeDocuments,
               },
             }
           : false,
@@ -36,26 +38,29 @@ export class SemesterService {
     });
   }
 
-  async findById(id: string, includeCourses = false, includeDocuments = false) {
-    if (includeDocuments && !includeCourses) {
+  async findById(
+    id: string,
+    includeCoursesOnSemester = false,
+    includeDocuments = false,
+    includeCourse = false,
+  ) {
+    if (
+      (includeDocuments && !includeCoursesOnSemester) ||
+      (includeCourse && !includeCoursesOnSemester)
+    ) {
       throw new BadRequestException(
-        'Cannot include documents without including courses',
+        'Cannot include documents without including courses on semester',
       );
     }
     try {
       return await this.prisma.semester.findUnique({
         where: { id },
         include: {
-          courseOnSemesters: includeCourses
+          courseOnSemesters: includeCoursesOnSemester
             ? {
                 include: {
-                  course: includeDocuments
-                    ? {
-                        include: {
-                          documents: true,
-                        },
-                      }
-                    : true,
+                  course: includeCourse,
+                  documents: includeDocuments,
                 },
               }
             : false,
