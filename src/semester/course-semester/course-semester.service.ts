@@ -30,13 +30,17 @@ export class CourseSemesterService {
 
   async findOne(id: string, includeCourses = false, includeSemesters = false) {
     try {
-      return await this.prisma.courseOnSemester.findUnique({
+      const courseOnSemester = await this.prisma.courseOnSemester.findUnique({
         where: { id },
         include: {
           course: includeCourses,
           semester: includeSemesters,
         },
       });
+      if (!courseOnSemester) {
+        throw new NotFoundException(`CourseSemester with ID ${id} not found`);
+      }
+      return courseOnSemester;
     } catch (error) {
       throw new NotFoundException(`CourseSemester with ID ${id} not found`);
     }

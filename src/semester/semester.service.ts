@@ -53,7 +53,7 @@ export class SemesterService {
       );
     }
     try {
-      return await this.prisma.semester.findUnique({
+      const semester = await this.prisma.semester.findUnique({
         where: { id },
         include: {
           courseOnSemesters: includeCoursesOnSemester
@@ -66,6 +66,10 @@ export class SemesterService {
             : false,
         },
       });
+      if (!semester) {
+        throw new NotFoundException(`Semester with ID ${id} not found`);
+      }
+      return semester;
     } catch (error) {
       throw new NotFoundException(`Semester with ID ${id} not found`);
     }
