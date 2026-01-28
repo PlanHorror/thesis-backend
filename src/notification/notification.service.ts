@@ -198,4 +198,66 @@ export class NotificationService {
       throw new BadRequestException('Failed to delete notification');
     }
   }
+
+  async findByIdForUser(
+    id: string,
+    lecturerId?: string,
+    studentId?: string,
+  ): Promise<Notification> {
+    try {
+      const notification = await this.prisma.notification.findFirst({
+        where: {
+          id,
+          ...(lecturerId && { lecturerId }),
+          ...(studentId && { studentId }),
+        },
+        include: {
+          student: true,
+          lecturer: true,
+        },
+      });
+
+      if (!notification) {
+        throw new NotFoundException(
+          'Notification not found or you are not authorized',
+        );
+      }
+
+      return notification;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to find notification', error);
+      throw new BadRequestException('Failed to find notification');
+    }
+  }
+
+  async deleteAllForUser(
+    lecturerId?: string,
+    studentId?: string,
+  ): Promise<{ count: number }> {
+    try {
+      if (!lecturerId && !studentId) {
+        throw new BadRequestException(
+          'Either lecturerId or studentId must be provided',
+        );
+      }
+
+      const result = await this.prisma.notification.deleteMany({
+        where: {
+          ...(lecturerId && { lecturerId }),
+          ...(studentId && { studentId }),
+        },
+      });
+
+      return result;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error('Failed to delete all notifications', error);
+      throw new BadRequestException('Failed to delete all notifications');
+    }
+  }
 }
