@@ -1,16 +1,23 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { Notification, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AppGateway } from 'src/gateway/gateway';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => AppGateway))
+    private readonly appGateway: AppGateway,
+  ) {}
 
   async findAll(): Promise<Notification[]> {
     return await this.prisma.notification.findMany({
@@ -66,9 +73,11 @@ export class NotificationService {
 
   async create(data: Prisma.NotificationCreateInput): Promise<Notification> {
     try {
-      return await this.prisma.notification.create({
+      const notification = await this.prisma.notification.create({
         data,
       });
+      this.appGateway.sendNotificationToUser(notification);
+      return notification;
     } catch (error) {
       this.logger.error('Failed to create notification', error);
       throw new BadRequestException('Failed to create notification');
