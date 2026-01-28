@@ -33,34 +33,34 @@ export class CreateStudentDto {
   studentId: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   fullName: string;
 
   @IsBoolean()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   gender: boolean;
 
   @IsDateString()
   @Transform(({ value }) => new Date(value).toISOString())
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   birthDate: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   citizenId: string;
 
   @IsPhoneNumber('VN')
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   phone: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   address: string;
 }
 
@@ -72,118 +72,118 @@ export class CreateMultipleStudentsDto {
 
 export class UpdateStudentDto {
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   departmentId: string;
 
   @IsEmail()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   email: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   username: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   @ValidateIf((o) => o.oldPassword)
   newPassword: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   @ValidateIf((o) => o.oldPassword)
   confirmPassword: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   studentId: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   fullName: string;
 
   @IsBoolean()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   gender: boolean;
 
   @IsDateString()
   @Transform(({ value }) => new Date(value).toISOString())
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   birthDate: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   citizenId: string;
 
   @IsPhoneNumber('VN')
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   phone: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   address: string;
 
   @IsBoolean()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   active: boolean;
 }
 
 export class StudentUpdateAccountDto {
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   username: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   fullName: string;
 
   @IsBoolean()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   gender: boolean;
 
   @IsDateString()
   @Transform(({ value }) => new Date(value).toISOString())
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   birthDate: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   citizenId: string;
 
   @IsPhoneNumber('VN')
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   phone: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   address: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   oldPassword: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   password: string;
 }

@@ -81,8 +81,8 @@ export class CourseOnSemesterDto {
   endTime: number;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
+  @IsNotEmpty()
   location: string;
 
   @ValidateNested({ each: true })
