@@ -1034,7 +1034,6 @@ export class AdminService {
     try {
       const webhookData: any = {
         url: data.url,
-        ...(data.secret && { secret: data.secret }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         ...(data.studentId && { student: { connect: { id: data.studentId } } }),
         ...(data.lecturerId && {
@@ -1052,7 +1051,6 @@ export class AdminService {
     try {
       const updateData: any = {};
       if (data.url !== undefined) updateData.url = data.url;
-      if (data.secret !== undefined) updateData.secret = data.secret;
       if (data.isActive !== undefined) updateData.isActive = data.isActive;
       if (data.studentId !== undefined) {
         updateData.student = { connect: { id: data.studentId } };

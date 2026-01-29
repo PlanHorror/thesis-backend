@@ -5,8 +5,13 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Webhook } from '@prisma/client';
+import { Notification, Prisma, Webhook, WebhookLog } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { firstValueFrom } from 'rxjs';
+import {
+  generateWebhookSecret,
+  generateWebhookSignature,
+} from 'common/utils/webhook.util';
 
 @Injectable()
 export class WebhookService {
@@ -90,8 +95,14 @@ export class WebhookService {
 
   async create(data: Prisma.WebhookCreateInput): Promise<Webhook> {
     try {
+      // Auto-generate secret if not provided
+      const secret = generateWebhookSecret();
+
       return await this.prisma.webhook.create({
-        data,
+        data: {
+          ...data,
+          secret,
+        },
         include: {
           student: true,
           lecturer: true,
@@ -241,5 +252,104 @@ export class WebhookService {
       lecturerId,
       studentId,
     );
+  }
+
+  async triggerWebhooksForNotifications(
+    notifications: Notification[],
+  ): Promise<WebhookLog[]> {
+    const logs: WebhookLog[] = [];
+
+    for (const notification of notifications) {
+      const userId = notification.studentId || notification.lecturerId;
+      if (!userId) {
+        this.logger.warn(
+          `Notification ${notification.id} has no associated user`,
+        );
+        continue;
+      }
+
+      try {
+        // Get all active webhooks for this user
+        const webhooks = await this.prisma.webhook.findMany({
+          where: {
+            isActive: true,
+            OR: [
+              ...(notification.studentId
+                ? [{ studentId: notification.studentId }]
+                : []),
+              ...(notification.lecturerId
+                ? [{ lecturerId: notification.lecturerId }]
+                : []),
+            ],
+          },
+        });
+
+        // Trigger each webhook
+        for (const webhook of webhooks) {
+          const log = await this.sendWebhook(
+            webhook,
+            'notification',
+            notification,
+          );
+          logs.push(log);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to trigger webhooks for notification ${notification.id}`,
+          error,
+        );
+      }
+    }
+
+    return logs;
+  }
+
+  private async sendWebhook(
+    webhook: Webhook,
+    event: string,
+    payload: object,
+  ): Promise<WebhookLog> {
+    const startTime = Date.now();
+    let statusCode: number | null = null;
+    let responseBody: string | null = null;
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add signature if secret is configured
+      if (webhook.secret) {
+        const signature = generateWebhookSignature(webhook.secret, payload);
+        headers['X-Webhook-Signature'] = signature;
+      }
+
+      const response = await firstValueFrom(
+        this.httpService.post(webhook.url, payload, { headers }),
+      );
+
+      statusCode = response.status;
+      responseBody = JSON.stringify(response.data);
+    } catch (error) {
+      statusCode = error.response?.status || 500;
+      responseBody = error.message;
+      this.logger.error(
+        `Webhook ${webhook.id} trigger failed: ${error.message}`,
+      );
+    }
+
+    const duration = Date.now() - startTime;
+
+    // Log the webhook call
+    return await this.prisma.webhookLog.create({
+      data: {
+        webhookId: webhook.id,
+        event,
+        payload: payload as Prisma.InputJsonValue,
+        statusCode,
+        responseBody,
+        duration,
+      },
+    });
   }
 }

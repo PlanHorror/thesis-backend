@@ -17,13 +17,11 @@ import type { Student, Lecturer, Prisma } from '@prisma/client';
 
 class CreateWebhookBodyDto {
   url: string;
-  secret?: string;
   isActive?: boolean;
 }
 
 class UpdateWebhookBodyDto {
   url?: string;
-  secret?: string;
   isActive?: boolean;
 }
 
@@ -55,7 +53,6 @@ export class WebhookController {
   ) {
     const webhookData: Prisma.WebhookCreateInput = {
       url: data.url,
-      ...(data.secret && { secret: data.secret }),
       ...(data.isActive !== undefined && { isActive: data.isActive }),
       student: { connect: { id: student.id } },
     };
@@ -71,7 +68,6 @@ export class WebhookController {
   ) {
     const updateData: Prisma.WebhookUpdateInput = {};
     if (data.url !== undefined) updateData.url = data.url;
-    if (data.secret !== undefined) updateData.secret = data.secret;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     return await this.webhookService.updateForUser(
@@ -132,7 +128,6 @@ export class WebhookController {
   ) {
     const webhookData: Prisma.WebhookCreateInput = {
       url: data.url,
-      ...(data.secret && { secret: data.secret }),
       ...(data.isActive !== undefined && { isActive: data.isActive }),
       lecturer: { connect: { id: lecturer.id } },
     };
@@ -148,7 +143,6 @@ export class WebhookController {
   ) {
     const updateData: Prisma.WebhookUpdateInput = {};
     if (data.url !== undefined) updateData.url = data.url;
-    if (data.secret !== undefined) updateData.secret = data.secret;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     return await this.webhookService.updateForUser(

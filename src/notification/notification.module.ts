@@ -3,11 +3,13 @@ import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GatewayModule } from 'src/gateway/gateway.module';
+import { NotificationSubscriber } from './notification.subcriber';
+import { WebhookModule } from 'src/webhook/webhook.module';
 
 @Module({
-  imports: [forwardRef(() => GatewayModule)],
+  imports: [forwardRef(() => GatewayModule), forwardRef(() => WebhookModule)],
   controllers: [NotificationController],
-  providers: [NotificationService, PrismaService],
+  providers: [NotificationService, PrismaService, NotificationSubscriber],
   exports: [NotificationService],
 })
 export class NotificationModule {}

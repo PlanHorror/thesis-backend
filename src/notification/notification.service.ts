@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Notification, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AppGateway } from 'src/gateway/gateway';
+import { AppGateway } from 'src/gateway/gateway.gateway';
 
 @Injectable()
 export class NotificationService {

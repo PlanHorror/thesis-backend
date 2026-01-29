@@ -12,11 +12,6 @@ export class CreateWebhookDto {
   url: string;
 
   @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  secret?: string;
-
-  @IsOptional()
   @IsBoolean()
   @IsNotEmpty()
   isActive?: boolean;
@@ -37,11 +32,6 @@ export class UpdateWebhookDto {
   @IsUrl()
   @IsNotEmpty()
   url?: string;
-
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  secret?: string;
 
   @IsOptional()
   @IsBoolean()

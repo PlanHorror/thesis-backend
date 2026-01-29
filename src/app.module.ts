@@ -13,6 +13,9 @@ import { CourseSemesterController } from './admin/semester/course-semester/cours
 import { ExamScheduleModule } from './exam-schedule/exam-schedule.module';
 import { NotificationModule } from './notification/notification.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { WebhookModule } from './webhook/webhook.module';
+import { CourseSemesterModule } from './semester/course-semester/course-semester.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -26,8 +29,19 @@ import { GatewayModule } from './gateway/gateway.module';
     ExamScheduleModule,
     NotificationModule,
     GatewayModule,
+    WebhookModule,
+    CourseSemesterModule,
+    EventEmitterModule.forRoot({
+      wildcard: true,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 10,
+      verboseMemoryLeak: true,
+      ignoreErrors: false,
+    }),
   ],
-  controllers: [AppController, CourseSemesterController],
+  controllers: [AppController],
   providers: [AppService, PrismaService],
 })
 export class AppModule {}
