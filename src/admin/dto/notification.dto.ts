@@ -4,6 +4,8 @@ import {
   IsNotEmpty,
   IsBoolean,
   IsEnum,
+  isURL,
+  IsUrl,
 } from 'class-validator';
 import { NotificationType } from '@prisma/client';
 
@@ -15,6 +17,11 @@ export class CreateNotificationDto {
   @IsString()
   @IsNotEmpty()
   message: string;
+
+  @IsUrl()
+  @IsNotEmpty()
+  @IsOptional()
+  url?: string;
 
   @IsOptional()
   @IsNotEmpty()
