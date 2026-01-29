@@ -58,6 +58,8 @@ import {
   CreateNotificationDto,
   UpdateNotificationDto,
 } from './dto/notification.dto';
+import { WebhookService } from 'src/webhook/webhook.service';
+import { CreateWebhookDto, UpdateWebhookDto } from './dto/webhook.dto';
 
 @Injectable()
 export class AdminService {
@@ -75,6 +77,7 @@ export class AdminService {
     private readonly sessionService: SessionService,
     private readonly examScheduleService: ExamScheduleService,
     private readonly notificationService: NotificationService,
+    private readonly webhookService: WebhookService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -995,6 +998,90 @@ export class AdminService {
       return await this.notificationService.delete(id);
     } catch (error) {
       this.logger.error('Failed to delete notification', error);
+      throw error;
+    }
+  }
+
+  // Webhook methods
+  async getAllWebhooksService() {
+    try {
+      return await this.webhookService.findAll();
+    } catch (error) {
+      this.logger.error('Failed to get all webhooks', error);
+      throw error;
+    }
+  }
+
+  async getWebhookByIdService(id: string) {
+    try {
+      return await this.webhookService.findById(id);
+    } catch (error) {
+      this.logger.error('Failed to get webhook by id', error);
+      throw error;
+    }
+  }
+
+  async getWebhooksByUserService(lecturerId?: string, studentId?: string) {
+    try {
+      return await this.webhookService.findByUser(lecturerId, studentId);
+    } catch (error) {
+      this.logger.error('Failed to get webhooks by user', error);
+      throw error;
+    }
+  }
+
+  async createWebhookService(data: CreateWebhookDto) {
+    try {
+      const webhookData: any = {
+        url: data.url,
+        ...(data.secret && { secret: data.secret }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.studentId && { student: { connect: { id: data.studentId } } }),
+        ...(data.lecturerId && {
+          lecturer: { connect: { id: data.lecturerId } },
+        }),
+      };
+      return await this.webhookService.create(webhookData);
+    } catch (error) {
+      this.logger.error('Failed to create webhook', error);
+      throw error;
+    }
+  }
+
+  async updateWebhookService(id: string, data: UpdateWebhookDto) {
+    try {
+      const updateData: any = {};
+      if (data.url !== undefined) updateData.url = data.url;
+      if (data.secret !== undefined) updateData.secret = data.secret;
+      if (data.isActive !== undefined) updateData.isActive = data.isActive;
+      if (data.studentId !== undefined) {
+        updateData.student = { connect: { id: data.studentId } };
+      }
+      if (data.lecturerId !== undefined) {
+        updateData.lecturer = { connect: { id: data.lecturerId } };
+      }
+
+      return await this.webhookService.update(id, updateData);
+    } catch (error) {
+      this.logger.error('Failed to update webhook', error);
+      throw error;
+    }
+  }
+
+  async deleteWebhookService(id: string) {
+    try {
+      return await this.webhookService.delete(id);
+    } catch (error) {
+      this.logger.error('Failed to delete webhook', error);
+      throw error;
+    }
+  }
+
+  async toggleWebhookActiveService(id: string) {
+    try {
+      return await this.webhookService.toggleActive(id);
+    } catch (error) {
+      this.logger.error('Failed to toggle webhook active', error);
       throw error;
     }
   }

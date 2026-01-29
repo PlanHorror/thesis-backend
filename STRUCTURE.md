@@ -19,8 +19,8 @@
 │   │   ├── file.util.ts
 │   │   └── index.ts
 │   └── validator
-│   ├── date.validator.ts
-│   └── index.ts
+│       ├── date.validator.ts
+│       └── index.ts
 ├── eslint.config.mjs
 ├── nest-cli.json
 ├── package.json
@@ -52,6 +52,8 @@
 │   │   │   └── migration.sql
 │   │   ├── 20260128032757_fix_course_document_scea
 │   │   │   └── migration.sql
+│   │   ├── 20260128230610_init_webhook_object
+│   │   │   └── migration.sql
 │   │   └── migration_lock.toml
 │   └── schema.prisma
 ├── README.md
@@ -66,11 +68,11 @@
 │   │   │   ├── course.controller.spec.ts
 │   │   │   ├── course.controller.ts
 │   │   │   └── enrollment
-│   │   │   ├── enrollment.controller.spec.ts
-│   │   │   ├── enrollment.controller.ts
-│   │   │   └── session
-│   │   │   ├── session.controller.spec.ts
-│   │   │   └── session.controller.ts
+│   │   │       ├── enrollment.controller.spec.ts
+│   │   │       ├── enrollment.controller.ts
+│   │   │       └── session
+│   │   │           ├── session.controller.spec.ts
+│   │   │           └── session.controller.ts
 │   │   ├── department
 │   │   │   ├── department.controller.spec.ts
 │   │   │   └── department.controller.ts
@@ -80,12 +82,20 @@
 │   │   │   ├── course-enrollment.dto.ts
 │   │   │   ├── department.dto.ts
 │   │   │   ├── enrollment-session.dto.ts
+│   │   │   ├── exam-schedule.dto.ts
 │   │   │   ├── lecturer.dto.ts
+│   │   │   ├── notification.dto.ts
 │   │   │   ├── semester.dto.ts
 │   │   │   └── student.dto.ts
+│   │   ├── exam-schedule
+│   │   │   ├── exam-schedule.controller.spec.ts
+│   │   │   └── exam-schedule.controller.ts
 │   │   ├── lecturer
 │   │   │   ├── lecturer.controller.spec.ts
 │   │   │   └── lecturer.controller.ts
+│   │   ├── notification
+│   │   │   ├── notification.controller.spec.ts
+│   │   │   └── notification.controller.ts
 │   │   ├── semester
 │   │   │   ├── course-semester
 │   │   │   │   ├── course-semester.controller.spec.ts
@@ -93,8 +103,8 @@
 │   │   │   ├── semester.controller.spec.ts
 │   │   │   └── semester.controller.ts
 │   │   └── student
-│   │   ├── student.controller.spec.ts
-│   │   └── student.controller.ts
+│   │       ├── student.controller.spec.ts
+│   │       └── student.controller.ts
 │   ├── app.controller.spec.ts
 │   ├── app.controller.ts
 │   ├── app.module.ts
@@ -108,7 +118,7 @@
 │   │   ├── dto
 │   │   │   └── auth.dto.ts
 │   │   └── strategies
-│   │   └── access.strategy.ts
+│   │       └── access.strategy.ts
 │   ├── course
 │   │   ├── course.controller.spec.ts
 │   │   ├── course.controller.ts
@@ -122,26 +132,41 @@
 │   │   │   ├── document.service.spec.ts
 │   │   │   ├── document.service.ts
 │   │   │   └── dto
-│   │   │   └── document.dto.ts
+│   │   │       └── document.dto.ts
 │   │   └── enrollment
-│   │   ├── enrollment.controller.spec.ts
-│   │   ├── enrollment.controller.ts
-│   │   ├── enrollment.module.ts
-│   │   ├── enrollment.service.spec.ts
-│   │   ├── enrollment.service.ts
-│   │   └── session
-│   │   ├── session.controller.spec.ts
-│   │   ├── session.controller.ts
-│   │   ├── session.module.ts
-│   │   ├── session.service.spec.ts
-│   │   └── session.service.ts
+│   │       ├── enrollment.controller.spec.ts
+│   │       ├── enrollment.controller.ts
+│   │       ├── enrollment.module.ts
+│   │       ├── enrollment.service.spec.ts
+│   │       ├── enrollment.service.ts
+│   │       └── session
+│   │           ├── session.controller.spec.ts
+│   │           ├── session.controller.ts
+│   │           ├── session.module.ts
+│   │           ├── session.service.spec.ts
+│   │           └── session.service.ts
 │   ├── department
 │   │   ├── department.controller.spec.ts
 │   │   ├── department.controller.ts
 │   │   ├── department.module.ts
 │   │   ├── department.service.spec.ts
 │   │   └── department.service.ts
+│   ├── exam-schedule
+│   │   ├── exam-schedule.controller.spec.ts
+│   │   ├── exam-schedule.controller.ts
+│   │   ├── exam-schedule.module.ts
+│   │   ├── exam-schedule.service.spec.ts
+│   │   └── exam-schedule.service.ts
+│   ├── gateway
+│   │   ├── gateway.module.ts
+│   │   └── gateway.ts
 │   ├── main.ts
+│   ├── notification
+│   │   ├── notification.controller.spec.ts
+│   │   ├── notification.controller.ts
+│   │   ├── notification.module.ts
+│   │   ├── notification.service.spec.ts
+│   │   └── notification.service.ts
 │   ├── prisma
 │   │   └── prisma.service.ts
 │   ├── semester
@@ -156,20 +181,26 @@
 │   │   ├── semester.module.ts
 │   │   ├── semester.service.spec.ts
 │   │   └── semester.service.ts
-│   └── user-manager
-│   ├── dto
-│   ├── lecturer
-│   │   ├── lecturer.controller.spec.ts
-│   │   ├── lecturer.controller.ts
-│   │   ├── lecturer.module.ts
-│   │   ├── lecturer.service.spec.ts
-│   │   └── lecturer.service.ts
-│   └── student
-│   ├── student.controller.spec.ts
-│   ├── student.controller.ts
-│   ├── student.module.ts
-│   ├── student.service.spec.ts
-│   └── student.service.ts
+│   ├── user-manager
+│   │   ├── dto
+│   │   ├── lecturer
+│   │   │   ├── lecturer.controller.spec.ts
+│   │   │   ├── lecturer.controller.ts
+│   │   │   ├── lecturer.module.ts
+│   │   │   ├── lecturer.service.spec.ts
+│   │   │   └── lecturer.service.ts
+│   │   └── student
+│   │       ├── student.controller.spec.ts
+│   │       ├── student.controller.ts
+│   │       ├── student.module.ts
+│   │       ├── student.service.spec.ts
+│   │       └── student.service.ts
+│   └── webhook
+│       ├── webhook.controller.spec.ts
+│       ├── webhook.controller.ts
+│       ├── webhook.module.ts
+│       ├── webhook.service.spec.ts
+│       └── webhook.service.ts
 ├── STRUCTURE.md
 ├── test
 │   ├── app.e2e-spec.ts
@@ -177,3 +208,5 @@
 ├── tsconfig.build.json
 ├── tsconfig.json
 └── yarn.lock
+
+59 directories, 151 files

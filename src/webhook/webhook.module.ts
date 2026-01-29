@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { WebhookController } from './webhook.controller';
 import { WebhookService } from './webhook.service';
 import { HttpModule } from '@nestjs/axios';
+import { PrismaService } from 'src/prisma/prisma.service';
+
 @Module({
   controllers: [WebhookController],
-  providers: [WebhookService],
+  providers: [WebhookService, PrismaService],
   exports: [WebhookService],
   imports: [
     HttpModule.register({

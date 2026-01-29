@@ -60,6 +60,7 @@ model Student {
 
   enrollments StudentCourseEnrollment[]
   notifications Notification[]
+  webhooks    Webhook[]
 }
 
 model Lecturer {
@@ -76,6 +77,7 @@ model Lecturer {
   departmentHead Department? @relation("DepartmentHead")
   courseOnSemesters CourseOnSemester[]
   notifications Notification[]
+  webhooks    Webhook[]
 }
 
 model Department {
@@ -215,3 +217,34 @@ model Notification {
   updatedAt   DateTime @updatedAt
 }
  
+model Webhook {
+  id          String   @id @default(cuid())
+  url         String  
+  secret      String?  
+  isActive    Boolean  @default(true)
+  
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id])
+  
+  lecturerId  String?
+  lecturer    Lecturer? @relation(fields: [lecturerId], references: [id])
+
+  webhookLogs WebhookLog[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WebhookLog {
+  id           String   @id @default(cuid())
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  
+  event        String   
+  payload      Json     
+  statusCode   Int?     
+  responseBody String?  
+  duration     Int     
+  
+  createdAt    DateTime @default(now())
+}

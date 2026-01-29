@@ -23,6 +23,8 @@ import { ExamScheduleController } from './exam-schedule/exam-schedule.controller
 import { ExamScheduleModule } from 'src/exam-schedule/exam-schedule.module';
 import { NotificationController } from './notification/notification.controller';
 import { NotificationModule } from 'src/notification/notification.module';
+import { WebhookController } from './webhook/webhook.controller';
+import { WebhookModule } from 'src/webhook/webhook.module';
 
 @Module({
   controllers: [
@@ -37,6 +39,7 @@ import { NotificationModule } from 'src/notification/notification.module';
     SessionController,
     ExamScheduleController,
     NotificationController,
+    WebhookController,
   ],
   providers: [AdminService, PrismaService],
   exports: [AdminService],
@@ -52,6 +55,7 @@ import { NotificationModule } from 'src/notification/notification.module';
     SessionModule,
     ExamScheduleModule,
     NotificationModule,
+    WebhookModule,
   ],
 })
 export class AdminModule {}
