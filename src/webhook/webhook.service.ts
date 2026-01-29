@@ -140,4 +140,106 @@ export class WebhookService {
     const webhook = await this.findById(id);
     return await this.update(id, { isActive: !webhook.isActive });
   }
+
+  async findByIdForUser(
+    id: string,
+    lecturerId?: string,
+    studentId?: string,
+  ): Promise<Webhook> {
+    try {
+      const webhook = await this.prisma.webhook.findFirst({
+        where: {
+          id,
+          ...(lecturerId && { lecturerId }),
+          ...(studentId && { studentId }),
+        },
+        include: {
+          student: true,
+          lecturer: true,
+        },
+      });
+
+      if (!webhook) {
+        throw new NotFoundException(
+          'Webhook not found or you are not authorized',
+        );
+      }
+
+      return webhook;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error('Failed to get webhook', error);
+      throw new BadRequestException('Failed to get webhook');
+    }
+  }
+
+  async updateForUser(
+    id: string,
+    data: Prisma.WebhookUpdateInput,
+    lecturerId?: string,
+    studentId?: string,
+  ): Promise<Webhook> {
+    try {
+      // Verify ownership first
+      await this.findByIdForUser(id, lecturerId, studentId);
+
+      return await this.prisma.webhook.update({
+        where: { id },
+        data,
+        include: {
+          student: true,
+          lecturer: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Webhook not found');
+      }
+      this.logger.error('Failed to update webhook', error);
+      throw new BadRequestException('Failed to update webhook');
+    }
+  }
+
+  async deleteForUser(
+    id: string,
+    lecturerId?: string,
+    studentId?: string,
+  ): Promise<Webhook> {
+    try {
+      // Verify ownership first
+      const webhook = await this.findByIdForUser(id, lecturerId, studentId);
+
+      return await this.prisma.webhook.delete({
+        where: { id: webhook.id },
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Webhook not found');
+      }
+      this.logger.error('Failed to delete webhook', error);
+      throw new BadRequestException('Failed to delete webhook');
+    }
+  }
+
+  async toggleActiveForUser(
+    id: string,
+    lecturerId?: string,
+    studentId?: string,
+  ): Promise<Webhook> {
+    const webhook = await this.findByIdForUser(id, lecturerId, studentId);
+    return await this.updateForUser(
+      id,
+      { isActive: !webhook.isActive },
+      lecturerId,
+      studentId,
+    );
+  }
 }
