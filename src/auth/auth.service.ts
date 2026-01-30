@@ -35,7 +35,7 @@ export class AuthService {
     return this.adminService.create({ ...rest, password: hashedPassword });
   }
 
-  async adminSignin(data: SigninDto): Promise<{ token: string }> {
+  async adminSignin(data: SigninDto): Promise<{ accessToken: string }> {
     try {
       const admin = await this.adminService.findByUsername(data.username);
       if (!(await bcrypt.compare(data.password, admin.password))) {
@@ -48,13 +48,13 @@ export class AuthService {
         id: admin.id,
         role: Role.ADMIN,
       });
-      return { token };
+      return { accessToken: token };
     } catch (error) {
       throw new UnauthorizedException('Invalid credentials');
     }
   }
 
-  async studentSignin(data: SigninDto): Promise<{ token: string }> {
+  async studentSignin(data: SigninDto): Promise<{ accessToken: string }> {
     try {
       const student = await this.studentService.findByUsername(data.username);
       if (!(await bcrypt.compare(data.password, student.password))) {
@@ -68,13 +68,13 @@ export class AuthService {
         role: Role.STUDENT,
         email: student.email,
       });
-      return { token };
+      return { accessToken: token };
     } catch (error) {
       throw new UnauthorizedException('Invalid credentials');
     }
   }
 
-  async lecturerSignin(data: SigninDto) {
+  async lecturerSignin(data: SigninDto): Promise<{ accessToken: string }> {
     try {
       const lecturer = await this.lecturerService.findByUsername(data.username);
       if (!(await bcrypt.compare(data.password, lecturer.password))) {
@@ -88,7 +88,7 @@ export class AuthService {
         role: Role.LECTURER,
         email: lecturer.email,
       });
-      return { token };
+      return { accessToken: token };
     } catch (error) {
       throw new UnauthorizedException('Invalid credentials');
     }
