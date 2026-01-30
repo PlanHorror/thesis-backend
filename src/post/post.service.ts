@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Post, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -11,7 +12,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class PostService {
   private readonly logger = new Logger(PostService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(
     includeAdmin = false,
@@ -83,13 +87,18 @@ export class PostService {
 
   async create(data: Prisma.PostCreateInput): Promise<Post> {
     try {
-      return await this.prisma.post.create({
+      const post = await this.prisma.post.create({
         data,
         include: {
           admin: true,
           department: true,
         },
       });
+
+      // Emit event for post created
+      this.eventEmitter.emit('post.created', post);
+
+      return post;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException('Admin or Department not found');
@@ -101,7 +110,7 @@ export class PostService {
 
   async update(id: string, data: Prisma.PostUpdateInput): Promise<Post> {
     try {
-      return await this.prisma.post.update({
+      const post = await this.prisma.post.update({
         where: { id },
         data,
         include: {
@@ -109,6 +118,11 @@ export class PostService {
           department: true,
         },
       });
+
+      // Emit event for post updated
+      this.eventEmitter.emit('post.updated', post);
+
+      return post;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(`Post with ID ${id} not found`);

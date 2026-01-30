@@ -2,11 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   NotificationType,
+  PostType,
   type CourseDocument,
   type CourseOnSemester,
   type EnrollmentSession,
   type ExamSchedule,
   type Lecturer,
+  type Post,
   type Semester,
   type Student,
   type StudentCourseEnrollment,
@@ -720,6 +722,178 @@ export class NotificationSubscriber {
     await this.webhookService.triggerWebhooksForNotifications(allNotifications);
     this.logger.log(
       `Sent semester ending soon notifications to ${students.length} students and ${lecturers.length} lecturers`,
+    );
+  }
+
+  // ==================== Post Events ====================
+
+  @OnEvent('post.created')
+  async onPostCreated(post: Post): Promise<void> {
+    this.logger.log(
+      `Event: post.created - Post: ${post.id}, Type: ${post.type}`,
+    );
+
+    // Determine notification type based on post type
+    const notificationType =
+      post.type === PostType.ANNOUNCEMENT
+        ? NotificationType.WARNING
+        : NotificationType.INFO;
+
+    const postTypeLabel =
+      post.type === PostType.ANNOUNCEMENT ? 'Announcement' : 'News';
+
+    // Get target users based on departmentId
+    let students: Student[];
+    let lecturers: Lecturer[];
+
+    if (post.departmentId) {
+      // Department-specific post - only notify students in that department
+      // Lecturers don't have departmentId, so we notify all lecturers for department posts
+      [students, lecturers] = await Promise.all([
+        this.prisma.student.findMany({
+          where: { departmentId: post.departmentId },
+        }),
+        this.prisma.lecturer.findMany(),
+      ]);
+    } else {
+      // Global post - notify all users
+      [students, lecturers] = await Promise.all([
+        this.prisma.student.findMany(),
+        this.prisma.lecturer.findMany(),
+      ]);
+    }
+
+    // Create notifications for students
+    const studentNotifications = await this.prisma.$transaction(
+      students.map((student) =>
+        this.prisma.notification.create({
+          data: {
+            studentId: student.id,
+            type: notificationType,
+            title: `New ${postTypeLabel}: ${post.title}`,
+            message:
+              post.content.length > 200
+                ? `${post.content.substring(0, 200)}...`
+                : post.content,
+            url: `/posts/${post.id}`,
+          },
+        }),
+      ),
+    );
+
+    // Create notifications for lecturers
+    const lecturerNotifications = await this.prisma.$transaction(
+      lecturers.map((lecturer) =>
+        this.prisma.notification.create({
+          data: {
+            lecturerId: lecturer.id,
+            type: notificationType,
+            title: `New ${postTypeLabel}: ${post.title}`,
+            message:
+              post.content.length > 200
+                ? `${post.content.substring(0, 200)}...`
+                : post.content,
+            url: `/posts/${post.id}`,
+          },
+        }),
+      ),
+    );
+
+    const allNotifications = [
+      ...studentNotifications,
+      ...lecturerNotifications,
+    ];
+    for (const notification of allNotifications) {
+      this.webSocketGateway.sendNotificationToUser(notification);
+    }
+    await this.webhookService.triggerWebhooksForNotifications(allNotifications);
+    this.logger.log(
+      `Sent post created notifications to ${students.length} students and ${lecturers.length} lecturers`,
+    );
+  }
+
+  @OnEvent('post.updated')
+  async onPostUpdated(post: Post): Promise<void> {
+    this.logger.log(
+      `Event: post.updated - Post: ${post.id}, Type: ${post.type}`,
+    );
+
+    // Determine notification type based on post type
+    const notificationType =
+      post.type === PostType.ANNOUNCEMENT
+        ? NotificationType.WARNING
+        : NotificationType.INFO;
+
+    const postTypeLabel =
+      post.type === PostType.ANNOUNCEMENT ? 'Announcement' : 'News';
+
+    // Get target users based on departmentId
+    let students: Student[];
+    let lecturers: Lecturer[];
+
+    if (post.departmentId) {
+      // Department-specific post - only notify students in that department
+      // Lecturers don't have departmentId, so we notify all lecturers for department posts
+      [students, lecturers] = await Promise.all([
+        this.prisma.student.findMany({
+          where: { departmentId: post.departmentId },
+        }),
+        this.prisma.lecturer.findMany(),
+      ]);
+    } else {
+      // Global post - notify all users
+      [students, lecturers] = await Promise.all([
+        this.prisma.student.findMany(),
+        this.prisma.lecturer.findMany(),
+      ]);
+    }
+
+    // Create notifications for students
+    const studentNotifications = await this.prisma.$transaction(
+      students.map((student) =>
+        this.prisma.notification.create({
+          data: {
+            studentId: student.id,
+            type: notificationType,
+            title: `Updated ${postTypeLabel}: ${post.title}`,
+            message:
+              post.content.length > 200
+                ? `${post.content.substring(0, 200)}...`
+                : post.content,
+            url: `/posts/${post.id}`,
+          },
+        }),
+      ),
+    );
+
+    // Create notifications for lecturers
+    const lecturerNotifications = await this.prisma.$transaction(
+      lecturers.map((lecturer) =>
+        this.prisma.notification.create({
+          data: {
+            lecturerId: lecturer.id,
+            type: notificationType,
+            title: `Updated ${postTypeLabel}: ${post.title}`,
+            message:
+              post.content.length > 200
+                ? `${post.content.substring(0, 200)}...`
+                : post.content,
+            url: `/posts/${post.id}`,
+          },
+        }),
+      ),
+    );
+
+    const allNotifications = [
+      ...studentNotifications,
+      ...lecturerNotifications,
+    ];
+    for (const notification of allNotifications) {
+      this.webSocketGateway.sendNotificationToUser(notification);
+    }
+    await this.webhookService.triggerWebhooksForNotifications(allNotifications);
+    this.logger.log(
+      `Sent post updated notifications to ${students.length} students and ${lecturers.length} lecturers`,
     );
   }
 }
