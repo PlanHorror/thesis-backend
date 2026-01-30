@@ -26,6 +26,7 @@ import { NotificationModule } from 'src/notification/notification.module';
 import { WebhookController } from './webhook/webhook.controller';
 import { WebhookModule } from 'src/webhook/webhook.module';
 import { PostController } from './post/post.controller';
+import { PostModule } from 'src/post/post.module';
 
 @Module({
   controllers: [
@@ -58,6 +59,7 @@ import { PostController } from './post/post.controller';
     ExamScheduleModule,
     NotificationModule,
     WebhookModule,
+    PostModule,
   ],
 })
 export class AdminModule {}

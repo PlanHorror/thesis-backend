@@ -60,6 +60,8 @@ import {
 } from './dto/notification.dto';
 import { WebhookService } from 'src/webhook/webhook.service';
 import { CreateWebhookDto, UpdateWebhookDto } from './dto/webhook.dto';
+import { PostService } from 'src/post/post.service';
+import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
 
 @Injectable()
 export class AdminService {
@@ -78,6 +80,7 @@ export class AdminService {
     private readonly examScheduleService: ExamScheduleService,
     private readonly notificationService: NotificationService,
     private readonly webhookService: WebhookService,
+    private readonly postService: PostService,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -1080,6 +1083,120 @@ export class AdminService {
       return await this.webhookService.toggleActive(id);
     } catch (error) {
       this.logger.error('Failed to toggle webhook active', error);
+      throw error;
+    }
+  }
+
+  // Post Methods
+  async getAllPostsService(includeAdmin = false, includeDepartment = false) {
+    try {
+      return await this.postService.findAll(includeAdmin, includeDepartment);
+    } catch (error) {
+      this.logger.error('Failed to retrieve posts', error);
+      throw error;
+    }
+  }
+
+  async getPostByIdService(
+    id: string,
+    includeAdmin = false,
+    includeDepartment = false,
+  ) {
+    try {
+      return await this.postService.findById(
+        id,
+        includeAdmin,
+        includeDepartment,
+      );
+    } catch (error) {
+      this.logger.error('Failed to retrieve post', error);
+      throw error;
+    }
+  }
+
+  async getPostsByDepartmentIdService(
+    departmentId: string | null,
+    includeAdmin = false,
+    includeDepartment = false,
+  ) {
+    try {
+      return await this.postService.findByDepartmentId(
+        departmentId,
+        includeAdmin,
+        includeDepartment,
+      );
+    } catch (error) {
+      this.logger.error('Failed to retrieve posts by department', error);
+      throw error;
+    }
+  }
+
+  async getGlobalPostsService(includeAdmin = false, includeDepartment = false) {
+    try {
+      return await this.postService.findGlobalPosts(
+        includeAdmin,
+        includeDepartment,
+      );
+    } catch (error) {
+      this.logger.error('Failed to retrieve global posts', error);
+      throw error;
+    }
+  }
+
+  async createPostService(data: CreatePostDto, adminId: string) {
+    try {
+      return await this.postService.create({
+        title: data.title,
+        content: data.content,
+        type: data.type,
+        thumbnail: data.thumbnail,
+        admin: { connect: { id: adminId } },
+        ...(data.departmentId && {
+          department: { connect: { id: data.departmentId } },
+        }),
+      });
+    } catch (error) {
+      this.logger.error('Failed to create post', error);
+      throw error;
+    }
+  }
+
+  async updatePostService(id: string, data: UpdatePostDto) {
+    try {
+      const updateData: any = {};
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.content !== undefined) updateData.content = data.content;
+      if (data.type !== undefined) updateData.type = data.type;
+      if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail;
+      if (data.departmentId !== undefined) {
+        if (data.departmentId === null) {
+          updateData.department = { disconnect: true };
+        } else {
+          updateData.department = { connect: { id: data.departmentId } };
+        }
+      }
+
+      return await this.postService.update(id, updateData);
+    } catch (error) {
+      this.logger.error('Failed to update post', error);
+      throw error;
+    }
+  }
+
+  async deletePostService(id: string) {
+    try {
+      return await this.postService.delete(id);
+    } catch (error) {
+      this.logger.error('Failed to delete post', error);
+      throw error;
+    }
+  }
+
+  async deleteManyPostsService(ids: string[]) {
+    try {
+      return await this.postService.deleteMany(ids);
+    } catch (error) {
+      this.logger.error('Failed to delete posts', error);
       throw error;
     }
   }
