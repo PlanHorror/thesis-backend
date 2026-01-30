@@ -5,13 +5,17 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ExamSchedule, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ExamScheduleService {
   private readonly logger = new Logger(ExamScheduleService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(includeCourseOnSemester = false): Promise<ExamSchedule[]> {
     return await this.prisma.examSchedule.findMany({
@@ -119,7 +123,7 @@ export class ExamScheduleService {
 
   async create(data: Prisma.ExamScheduleCreateInput): Promise<ExamSchedule> {
     try {
-      return await this.prisma.examSchedule.create({
+      const examSchedule = await this.prisma.examSchedule.create({
         data,
         include: {
           courseOnSemester: {
@@ -130,6 +134,10 @@ export class ExamScheduleService {
           },
         },
       });
+
+      this.eventEmitter.emit('exam_schedule.created', examSchedule);
+
+      return examSchedule;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException('Course on semester not found');
@@ -157,7 +165,7 @@ export class ExamScheduleService {
   ): Promise<ExamSchedule> {
     try {
       // Create exam schedule only if lecturer owns the course (single query)
-      return await this.prisma.examSchedule.create({
+      const examSchedule = await this.prisma.examSchedule.create({
         data: {
           courseOnSemester: {
             connect: {
@@ -180,6 +188,10 @@ export class ExamScheduleService {
           },
         },
       });
+
+      this.eventEmitter.emit('exam_schedule.created', examSchedule);
+
+      return examSchedule;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(
@@ -229,7 +241,19 @@ export class ExamScheduleService {
         throw new NotFoundException('Exam schedule not found');
       }
 
-      return await this.findById(id, true);
+      const updatedExamSchedule = await this.findById(id, true);
+
+      // Emit event for exam schedule updated
+      const courseName =
+        (updatedExamSchedule as any).courseOnSemester?.course?.name ||
+        'Unknown Course';
+      this.eventEmitter.emit(
+        'exam_schedule.updated',
+        updatedExamSchedule,
+        courseName,
+      );
+
+      return updatedExamSchedule;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -244,6 +268,33 @@ export class ExamScheduleService {
     id: string,
   ): Promise<{ count: number }> {
     try {
+      // Get exam schedule with course info before deleting for event emission
+      const examSchedule = await this.prisma.examSchedule.findFirst({
+        where: {
+          id,
+          courseOnSemester: {
+            lecturerId,
+          },
+        },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
+      });
+
+      if (!examSchedule) {
+        throw new NotFoundException(
+          'Exam schedule not found or you are not authorized',
+        );
+      }
+
+      const courseName =
+        examSchedule.courseOnSemester?.course?.name || 'Unknown Course';
+      const courseOnSemesterId = examSchedule.courseOnSemesterId;
+
       // Delete exam schedule only if lecturer owns the course (single query)
       const result = await this.prisma.examSchedule.deleteMany({
         where: {
@@ -254,11 +305,12 @@ export class ExamScheduleService {
         },
       });
 
-      if (result.count === 0) {
-        throw new NotFoundException(
-          'Exam schedule not found or you are not authorized',
-        );
-      }
+      // Emit event for exam schedule deleted
+      this.eventEmitter.emit(
+        'exam_schedule.deleted',
+        courseOnSemesterId,
+        courseName,
+      );
 
       return result;
     } catch (error) {
@@ -297,10 +349,29 @@ export class ExamScheduleService {
     data: Prisma.ExamScheduleUpdateInput,
   ): Promise<ExamSchedule> {
     try {
-      return await this.prisma.examSchedule.update({
+      const updatedExamSchedule = await this.prisma.examSchedule.update({
         where: { id },
         data,
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
       });
+
+      // Emit event for exam schedule updated
+      const courseName =
+        (updatedExamSchedule as any).courseOnSemester?.course?.name ||
+        'Unknown Course';
+      this.eventEmitter.emit(
+        'exam_schedule.updated',
+        updatedExamSchedule,
+        courseName,
+      );
+
+      return updatedExamSchedule;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException('Exam schedule not found');
@@ -312,9 +383,38 @@ export class ExamScheduleService {
 
   async delete(id: string): Promise<ExamSchedule> {
     try {
-      return await this.prisma.examSchedule.delete({
+      // Get exam schedule with course info before deleting
+      const examSchedule = await this.prisma.examSchedule.findUnique({
+        where: { id },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
+      });
+
+      if (!examSchedule) {
+        throw new NotFoundException('Exam schedule not found');
+      }
+
+      const courseName =
+        examSchedule.courseOnSemester?.course?.name || 'Unknown Course';
+      const courseOnSemesterId = examSchedule.courseOnSemesterId;
+
+      const deletedExamSchedule = await this.prisma.examSchedule.delete({
         where: { id },
       });
+
+      // Emit event for exam schedule deleted
+      this.eventEmitter.emit(
+        'exam_schedule.deleted',
+        courseOnSemesterId,
+        courseName,
+      );
+
+      return deletedExamSchedule;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException('Exam schedule not found');

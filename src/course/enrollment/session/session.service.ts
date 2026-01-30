@@ -5,13 +5,17 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EnrollmentSession, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class SessionService {
   private readonly logger = new Logger(SessionService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(includeSemester = false): Promise<EnrollmentSession[]> {
     return await this.prisma.enrollmentSession.findMany({
@@ -63,9 +67,26 @@ export class SessionService {
     data: Prisma.EnrollmentSessionCreateInput,
   ): Promise<EnrollmentSession> {
     try {
-      return await this.prisma.enrollmentSession.create({
+      const session = await this.prisma.enrollmentSession.create({
         data,
+        include: { semester: true },
       });
+
+      // Emit event if session is active and within time range
+      const now = new Date();
+      if (
+        session.isActive &&
+        session.startDate <= now &&
+        session.endDate >= now
+      ) {
+        this.eventEmitter.emit(
+          'enrollment_session.opened',
+          session,
+          session.semester?.name || 'Unknown Semester',
+        );
+      }
+
+      return session;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException('Semester not found');

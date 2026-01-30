@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Student } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -13,7 +14,10 @@ import { StudentUpdateAccountDto } from 'src/admin/dto/student.dto';
 @Injectable()
 export class StudentService {
   private readonly logger = new Logger(StudentService.name);
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(): Promise<Student[]> {
     return this.prismaService.student.findMany();
@@ -86,9 +90,14 @@ export class StudentService {
 
   async create(data: Prisma.StudentCreateInput): Promise<Student> {
     try {
-      return await this.prismaService.student.create({
+      const student = await this.prismaService.student.create({
         data,
       });
+
+      // Emit event for student created
+      this.eventEmitter.emit('student.created', student);
+
+      return student;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -226,13 +235,20 @@ export class StudentService {
         const salt = await bcrypt.genSalt();
         hashedPassword = await bcrypt.hash(password, salt);
       }
-      return await this.prismaService.student.update({
+      const updatedStudent = await this.prismaService.student.update({
         where: { id: student.id },
         data: {
           ...updateData,
           ...(hashedPassword && { password: hashedPassword }),
         },
       });
+
+      // Emit event for password changed if password was updated
+      if (hashedPassword) {
+        this.eventEmitter.emit('student.password_changed', updatedStudent);
+      }
+
+      return updatedStudent;
     } catch (error) {
       this.logger.error('Failed to update student account', error.stack);
       throw new BadRequestException('Failed to update student account');

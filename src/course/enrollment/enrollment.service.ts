@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Student } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CourseSemesterService } from 'src/semester/course-semester/course-semester.service';
@@ -17,6 +18,7 @@ export class EnrollmentService {
     private readonly prisma: PrismaService,
     private readonly courseSemesterService: CourseSemesterService,
     private readonly sessionService: SessionService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAll(
@@ -156,10 +158,42 @@ export class EnrollmentService {
 
   async delete(id: string) {
     try {
-      return await this.prisma.studentCourseEnrollment.delete({
+      // Get enrollment with course info before deleting for event emission
+      const enrollment = await this.prisma.studentCourseEnrollment.findUnique({
         where: { id },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
       });
+
+      if (!enrollment) {
+        throw new NotFoundException('Enrollment not found.');
+      }
+
+      const courseName =
+        enrollment.courseOnSemester?.course?.name || 'Unknown Course';
+
+      const deletedEnrollment =
+        await this.prisma.studentCourseEnrollment.delete({
+          where: { id },
+        });
+
+      // Emit event for enrollment deleted by admin
+      this.eventEmitter.emit(
+        'enrollment.deleted_by_admin',
+        enrollment,
+        courseName,
+      );
+
+      return deletedEnrollment;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       if (error.code === 'P2025') {
         throw new NotFoundException('Enrollment not found.');
       }
@@ -222,8 +256,10 @@ export class EnrollmentService {
 
   async enrollStudentInCourse(student: Student, courseOnSemesterId: string) {
     // Check if current time is valid for enrollment
-    const courseOnSemester =
-      await this.courseSemesterService.findOne(courseOnSemesterId);
+    const courseOnSemester = await this.courseSemesterService.findOne(
+      courseOnSemesterId,
+      true,
+    );
     const isEnrollmentTimeValid =
       await this.sessionService.isEnrollmentTimeValid(
         courseOnSemester.semesterId,
@@ -239,15 +275,30 @@ export class EnrollmentService {
         `Student with ID ${student.id} is already enrolled in the course or has a time conflict.`,
       );
     }
-    return this.create({
+    const enrollment = await this.create({
       student: { connect: { id: student.id } },
       courseOnSemester: { connect: { id: courseOnSemesterId } },
     });
+
+    this.eventEmitter.emit(
+      'enrollment.created',
+      enrollment,
+      courseOnSemester.course?.name || 'Unknown Course',
+    );
+
+    return enrollment;
   }
 
   async unenrollStudentFromCourse(student: Student, enrollmentId: string) {
     // Check if current time is valid for unenrollment
-    const enrollment = await this.findOne(enrollmentId, false, true);
+    const enrollment = await this.findOne(
+      enrollmentId,
+      false,
+      true,
+      true, // includeCourse = true to get course name
+      false,
+      false,
+    );
     const isEnrollmentTimeValid =
       await this.sessionService.isEnrollmentTimeValid(
         enrollment.courseOnSemester.semesterId,
@@ -270,6 +321,12 @@ export class EnrollmentService {
         `Enrollment with ID ${enrollmentId} not found for student with ID ${student.id}`,
       );
     }
+
+    // Get course name from included relation
+    const courseName =
+      (enrollment.courseOnSemester as any).course?.name || 'Unknown Course';
+
+    this.eventEmitter.emit('enrollment.deleted', enrollment, courseName);
 
     return deleteResult;
   }

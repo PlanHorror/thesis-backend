@@ -13,11 +13,7 @@ import { AppGateway } from 'src/gateway/gateway.gateway';
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
-  constructor(
-    private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => AppGateway))
-    private readonly appGateway: AppGateway,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<Notification[]> {
     return await this.prisma.notification.findMany({
@@ -76,7 +72,6 @@ export class NotificationService {
       const notification = await this.prisma.notification.create({
         data,
       });
-      this.appGateway.sendNotificationToUser(notification);
       return notification;
     } catch (error) {
       this.logger.error('Failed to create notification', error);

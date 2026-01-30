@@ -16,6 +16,7 @@ import { GatewayModule } from './gateway/gateway.module';
 import { WebhookModule } from './webhook/webhook.module';
 import { CourseSemesterModule } from './semester/course-semester/course-semester.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
       verboseMemoryLeak: true,
       ignoreErrors: false,
     }),
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

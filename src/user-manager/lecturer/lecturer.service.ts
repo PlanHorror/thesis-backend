@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Lecturer, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -12,7 +13,10 @@ import { LecturerUpdateAccountDto } from 'src/admin/dto/lecturer.dto';
 @Injectable()
 export class LecturerService {
   private logger = new Logger(LecturerService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(): Promise<Lecturer[]> {
     return this.prisma.lecturer.findMany();
@@ -65,9 +69,14 @@ export class LecturerService {
 
   async create(data: Prisma.LecturerCreateInput): Promise<Lecturer> {
     try {
-      return await this.prisma.lecturer.create({
+      const lecturer = await this.prisma.lecturer.create({
         data,
       });
+
+      // Emit event for lecturer created
+      this.eventEmitter.emit('lecturer.created', lecturer);
+
+      return lecturer;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -180,13 +189,20 @@ export class LecturerService {
         const salt = await bcrypt.genSalt();
         hashedPassword = await bcrypt.hash(password, salt);
       }
-      return await this.prisma.lecturer.update({
+      const updatedLecturer = await this.prisma.lecturer.update({
         where: { id: lecturer.id },
         data: {
           ...updateData,
           ...(hashedPassword && { password: hashedPassword }),
         },
       });
+
+      // Emit event for password changed if password was updated
+      if (hashedPassword) {
+        this.eventEmitter.emit('lecturer.password_changed', updatedLecturer);
+      }
+
+      return updatedLecturer;
     } catch (error) {
       this.logger.error('Failed to update lecturer account', error.stack);
       throw new BadRequestException('Failed to update lecturer account');

@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CourseDocument, Prisma } from '@prisma/client';
 import {
   DocumentCreate,
@@ -17,7 +18,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class DocumentService {
   private readonly logger = new Logger(DocumentService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(): Promise<CourseDocument[]> {
     return await this.prisma.courseDocument.findMany();
@@ -58,12 +62,26 @@ export class DocumentService {
     const path = `attachments/${generateFileName(file)}`;
     await saveFile(file, path);
     try {
-      return await this.prisma.courseDocument.create({
+      const document = await this.prisma.courseDocument.create({
         data: {
           ...data,
           path,
         },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
       });
+
+      // Emit event for document created
+      const courseName =
+        (document as any).courseOnSemester?.course?.name || 'Unknown Course';
+      this.eventEmitter.emit('document.created', document, courseName);
+
+      return document;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(
@@ -109,10 +127,24 @@ export class DocumentService {
       if (file) {
         await saveFile(file, path as string);
       }
-      return await this.prisma.courseDocument.update({
+      const document = await this.prisma.courseDocument.update({
         where: { id },
         data: { ...rest, ...(path && { path }) },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
       });
+
+      // Emit event for document updated
+      const courseName =
+        (document as any).courseOnSemester?.course?.name || 'Unknown Course';
+      this.eventEmitter.emit('document.updated', document, courseName);
+
+      return document;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(`Document with ID ${data.id} not found`);
@@ -151,7 +183,39 @@ export class DocumentService {
 
   async delete(id: string) {
     try {
-      return await this.prisma.courseDocument.delete({ where: { id } });
+      // Get document with course info before deleting
+      const document = await this.prisma.courseDocument.findUnique({
+        where: { id },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new NotFoundException(`Document with ID ${id} not found`);
+      }
+
+      const courseName =
+        document.courseOnSemester?.course?.name || 'Unknown Course';
+      const courseOnSemesterId = document.courseOnSemesterId;
+      const documentTitle = document.title;
+
+      const deletedDocument = await this.prisma.courseDocument.delete({
+        where: { id },
+      });
+
+      // Emit event for document deleted
+      this.eventEmitter.emit(
+        'document.deleted',
+        courseOnSemesterId,
+        documentTitle,
+      );
+
+      return deletedDocument;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(`Document with ID ${id} not found`);
@@ -207,7 +271,7 @@ export class DocumentService {
       await saveFile(file, path);
 
       // Create document with single query that validates courseOnSemester belongs to lecturer
-      return await this.prisma.courseDocument.create({
+      const document = await this.prisma.courseDocument.create({
         data: {
           title,
           path,
@@ -218,7 +282,21 @@ export class DocumentService {
             },
           },
         },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
       });
+
+      // Emit event for document created
+      const courseName =
+        document.courseOnSemester?.course?.name || 'Unknown Course';
+      this.eventEmitter.emit('document.created', document, courseName);
+
+      return document;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(
@@ -245,7 +323,7 @@ export class DocumentService {
       }
 
       // Update only if the courseOnSemester belongs to the lecturer - single query
-      return await this.prisma.courseDocument.update({
+      const document = await this.prisma.courseDocument.update({
         where: {
           id,
           courseOnSemester: {
@@ -256,7 +334,21 @@ export class DocumentService {
           title,
           ...(path && { path }),
         },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
+          },
+        },
       });
+
+      // Emit event for document updated
+      const courseName =
+        document.courseOnSemester?.course?.name || 'Unknown Course';
+      this.eventEmitter.emit('document.updated', document, courseName);
+
+      return document;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -271,12 +363,19 @@ export class DocumentService {
     lecturerId: string,
   ): Promise<{ message: string }> {
     try {
-      // Get document first to retrieve file path
+      // Get document first to retrieve file path and course info
       const document = await this.prisma.courseDocument.findFirst({
         where: {
           id,
           courseOnSemester: {
             lecturerId: lecturerId,
+          },
+        },
+        include: {
+          courseOnSemester: {
+            include: {
+              course: true,
+            },
           },
         },
       });
@@ -287,6 +386,9 @@ export class DocumentService {
         );
       }
 
+      const courseOnSemesterId = document.courseOnSemesterId;
+      const documentTitle = document.title;
+
       // Delete file from filesystem
       await deleteFile(document.path);
 
@@ -294,6 +396,13 @@ export class DocumentService {
       await this.prisma.courseDocument.delete({
         where: { id },
       });
+
+      // Emit event for document deleted
+      this.eventEmitter.emit(
+        'document.deleted',
+        courseOnSemesterId,
+        documentTitle,
+      );
 
       return { message: 'Document deleted successfully' };
     } catch (error) {

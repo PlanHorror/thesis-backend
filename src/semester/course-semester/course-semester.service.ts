@@ -4,12 +4,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class CourseSemesterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
   async findAll(
     includeCourses = false,
     includeSemesters = false,
@@ -92,10 +96,24 @@ export class CourseSemesterService {
 
   async update(id: string, data: Prisma.CourseOnSemesterUpdateInput) {
     try {
-      return await this.prisma.courseOnSemester.update({
+      const updatedCourseSemester = await this.prisma.courseOnSemester.update({
         where: { id },
         data,
+        include: {
+          course: true,
+        },
       });
+
+      // Emit event for course semester updated
+      const courseName =
+        (updatedCourseSemester as any).course?.name || 'Unknown Course';
+      this.eventEmitter.emit(
+        'course_semester.updated',
+        updatedCourseSemester,
+        courseName,
+      );
+
+      return updatedCourseSemester;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException(`CourseSemester with ID ${id} not found`);
