@@ -6,7 +6,12 @@ import {
 import { AdminService } from 'src/admin/admin.service';
 import { StudentService } from 'src/user-manager/student/student.service';
 import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
-import { AdminRegisterDto, SigninDto } from './dto/auth.dto';
+import {
+  AdminRegisterDto,
+  LecturerSigninDto,
+  SigninDto,
+  StudentSigninDto,
+} from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { AccountPayload } from 'common/interface/account.interface';
@@ -54,9 +59,18 @@ export class AuthService {
     }
   }
 
-  async studentSignin(data: SigninDto): Promise<{ accessToken: string }> {
+  async studentSignin(
+    data: StudentSigninDto,
+  ): Promise<{ accessToken: string }> {
     try {
-      const student = await this.studentService.findByUsername(data.username);
+      let student;
+      if (data.studentId) {
+        student = await this.studentService.findByStudentId(data.studentId);
+      } else if (data.username) {
+        student = await this.studentService.findByUsername(data.username);
+      } else {
+        throw new UnauthorizedException('Invalid credentials');
+      }
       if (!(await bcrypt.compare(data.password, student.password))) {
         throw new UnauthorizedException('Invalid credentials');
       }
@@ -74,9 +88,18 @@ export class AuthService {
     }
   }
 
-  async lecturerSignin(data: SigninDto): Promise<{ accessToken: string }> {
+  async lecturerSignin(
+    data: LecturerSigninDto,
+  ): Promise<{ accessToken: string }> {
     try {
-      const lecturer = await this.lecturerService.findByUsername(data.username);
+      let lecturer;
+      if (data.lecturerId) {
+        lecturer = await this.lecturerService.findByLecturerId(data.lecturerId);
+      } else if (data.username) {
+        lecturer = await this.lecturerService.findByUsername(data.username);
+      } else {
+        throw new UnauthorizedException('Invalid credentials');
+      }
       if (!(await bcrypt.compare(data.password, lecturer.password))) {
         throw new UnauthorizedException('Invalid credentials');
       }

@@ -67,6 +67,21 @@ export class LecturerService {
     }
   }
 
+  async findByLecturerId(lecturerId: string): Promise<Lecturer> {
+    try {
+      const lecturer = await this.prisma.lecturer.findUnique({
+        where: { lecturerId },
+      });
+      if (!lecturer) {
+        throw new NotFoundException('Lecturer not found');
+      }
+      return lecturer;
+    } catch (error) {
+      this.logger.error('Failed to retrieve lecturer', error.stack);
+      throw new NotFoundException('Lecturer not found');
+    }
+  }
+
   async create(data: Prisma.LecturerCreateInput): Promise<Lecturer> {
     try {
       const lecturer = await this.prisma.lecturer.create({

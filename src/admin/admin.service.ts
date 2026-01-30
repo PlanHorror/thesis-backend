@@ -396,9 +396,10 @@ export class AdminService {
   }
 
   async createCourseService(data: CreateCourseDto) {
+    const { departmentId, ...courseData } = data;
     const createdCourse = await this.courseService.create({
-      ...data,
-      department: { connect: { id: data.departmentId } },
+      ...courseData,
+      department: { connect: { id: departmentId } },
     });
     return {
       message: 'Course created successfully',

@@ -13,7 +13,8 @@ async function bootstrap() {
   );
   app.useLogger(new Logger());
   app.enableCors({
-    origin: '*',
+    origin: ['http://localhost:3000', process.env.FRONTEND_URL],
+    credentials: true,
   });
   app.setGlobalPrefix('api');
   Logger.log(`Application is running on: ${process.env.PORT ?? 3000}`);

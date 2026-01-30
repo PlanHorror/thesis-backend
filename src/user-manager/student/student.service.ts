@@ -88,6 +88,21 @@ export class StudentService {
     }
   }
 
+  async findByStudentId(studentId: string): Promise<Student> {
+    try {
+      const student = await this.prismaService.student.findUnique({
+        where: { studentId },
+      });
+      if (!student) {
+        throw new NotFoundException('Account not found');
+      }
+      return student;
+    } catch (error) {
+      this.logger.error('Failed to retrieve account', error.stack);
+      throw new NotFoundException('Account not found');
+    }
+  }
+
   async create(data: Prisma.StudentCreateInput): Promise<Student> {
     try {
       const student = await this.prismaService.student.create({

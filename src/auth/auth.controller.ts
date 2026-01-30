@@ -1,6 +1,11 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AdminRegisterDto, SigninDto } from './dto/auth.dto';
+import {
+  AdminRegisterDto,
+  LecturerSigninDto,
+  SigninDto,
+  StudentSigninDto,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -17,12 +22,12 @@ export class AuthController {
   }
 
   @Post('student/signin')
-  async studentSignin(@Body() data: SigninDto) {
+  async studentSignin(@Body() data: StudentSigninDto) {
     return this.authService.studentSignin(data);
   }
 
   @Post('lecturer/signin')
-  async lecturerSignin(@Body() data: SigninDto) {
+  async lecturerSignin(@Body() data: LecturerSigninDto) {
     return this.authService.lecturerSignin(data);
   }
 }

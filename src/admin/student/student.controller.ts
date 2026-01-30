@@ -29,7 +29,7 @@ export class StudentController {
     return this.adminService.getAllStudentAccountsService();
   }
 
-  @Get('/find/:id ')
+  @Get('/find/:id')
   async findOne(@Param('id') id: string) {
     return this.adminService.getStudentAccountByIdService(id);
   }
