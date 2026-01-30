@@ -27,6 +27,12 @@ enum ExamStatus {
   ABSENT      
   COMPLETED
 }
+
+
+enum PostType {
+  NEWS          
+  ANNOUNCEMENT  
+}
         
 
 model Admin {
@@ -36,6 +42,8 @@ model Admin {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  posts     Post[]
 }
 
 
@@ -92,6 +100,7 @@ model Department {
 
   students    Student[]  @relation("DepartmentStudents")
   courses     Course[]
+  posts       Post[]
 }
 
 model Course {
@@ -248,4 +257,25 @@ model WebhookLog {
   duration     Int     
   
   createdAt    DateTime @default(now())
+}
+
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  type        PostType @default(NEWS)
+  
+  admin     Admin    @relation(fields: [adminId], references: [id])
+  adminId   String
+  // Null means "Global", otherwise specific to a department
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  
+
+  // Simple Attachments
+  thumbnail   String?      // Main image URL for the feed
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }

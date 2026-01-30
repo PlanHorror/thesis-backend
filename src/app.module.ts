@@ -17,6 +17,7 @@ import { WebhookModule } from './webhook/webhook.module';
 import { CourseSemesterModule } from './semester/course-semester/course-semester.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PostModule } from './post/post.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       ignoreErrors: false,
     }),
     ScheduleModule.forRoot(),
+    PostModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

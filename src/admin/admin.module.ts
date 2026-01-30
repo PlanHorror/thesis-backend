@@ -25,6 +25,7 @@ import { NotificationController } from './notification/notification.controller';
 import { NotificationModule } from 'src/notification/notification.module';
 import { WebhookController } from './webhook/webhook.controller';
 import { WebhookModule } from 'src/webhook/webhook.module';
+import { PostController } from './post/post.controller';
 
 @Module({
   controllers: [
@@ -40,6 +41,7 @@ import { WebhookModule } from 'src/webhook/webhook.module';
     ExamScheduleController,
     NotificationController,
     WebhookController,
+    PostController,
   ],
   providers: [AdminService, PrismaService],
   exports: [AdminService],
