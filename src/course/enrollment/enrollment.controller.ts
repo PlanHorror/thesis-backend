@@ -13,6 +13,7 @@ import { EnrollmentService } from './enrollment.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Role, RoleGuard, GetUser } from 'common';
 import type { Student, Lecturer } from '@prisma/client';
+import { UpdateGradeDto } from './dto/update-grade.dto';
 
 @Controller('enrollment')
 export class EnrollmentController {
@@ -82,6 +83,20 @@ export class EnrollmentController {
       undefined,
       courseOnSemesterId,
       lecturer.id,
+    );
+  }
+
+  @Patch('grade/:enrollmentId')
+  @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.LECTURER]))
+  async updateStudentGrade(
+    @Param('enrollmentId') enrollmentId: string,
+    @Body() data: UpdateGradeDto,
+    @GetUser() lecturer: Lecturer,
+  ) {
+    return await this.enrollmentService.updateGradeByLecturer(
+      enrollmentId,
+      lecturer.id,
+      data,
     );
   }
 }

@@ -330,4 +330,69 @@ export class EnrollmentService {
 
     return deleteResult;
   }
+
+  async updateGradeByLecturer(
+    enrollmentId: string,
+    lecturerId: string,
+    gradeData: {
+      gradeType1?: number;
+      gradeType2?: number;
+      gradeType3?: number;
+    },
+  ) {
+    // Get enrollment with course on semester to verify lecturer
+    const enrollment = await this.prisma.studentCourseEnrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        courseOnSemester: true,
+        student: true,
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException(
+        `Enrollment with ID ${enrollmentId} not found`,
+      );
+    }
+
+    // Verify that the lecturer is assigned to this course
+    if (enrollment.courseOnSemester.lecturerId !== lecturerId) {
+      throw new BadRequestException(
+        'You are not authorized to update grades for this course',
+      );
+    }
+
+    // Calculate final grade if all grade types are provided
+    const gradeType1 = gradeData.gradeType1 ?? enrollment.gradeType1;
+    const gradeType2 = gradeData.gradeType2 ?? enrollment.gradeType2;
+    const gradeType3 = gradeData.gradeType3 ?? enrollment.gradeType3;
+
+    const finalGrade =
+      gradeType1 !== null && gradeType2 !== null && gradeType3 !== null
+        ? gradeType1 * 0.1 + gradeType2 * 0.3 + gradeType3 * 0.6
+        : null;
+
+    return await this.prisma.studentCourseEnrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        ...gradeData,
+        finalGrade,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            fullName: true,
+            studentId: true,
+            email: true,
+          },
+        },
+        courseOnSemester: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+  }
 }
