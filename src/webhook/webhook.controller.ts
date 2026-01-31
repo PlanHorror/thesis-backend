@@ -22,16 +22,7 @@ import { RoleGuard } from 'common/guard/role.guard';
 import { Role } from 'common';
 import { GetUser } from 'common/decorator/getuser.decorator';
 import type { Student, Lecturer, Prisma } from '@prisma/client';
-
-class CreateWebhookBodyDto {
-  url: string;
-  isActive?: boolean;
-}
-
-class UpdateWebhookBodyDto {
-  url?: string;
-  isActive?: boolean;
-}
+import { CreateWebhookBodyDto, UpdateWebhookBodyDto } from './dto/webhook.dto';
 
 @ApiTags('Webhooks')
 @Controller('webhook')
