@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: thesis
+  labels:
+    app: backend
+data:
+  NODE_ENV: 'production'
+  PORT: '3000'
+  # Frontend URL for CORS - update with your actual frontend URL
+  FRONTEND_URL: 'http://localhost:3001'

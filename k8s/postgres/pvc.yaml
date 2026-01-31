@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: thesis
+  labels:
+    app: postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # For Minikube, the default StorageClass works
+  # For cloud providers, specify: storageClassName: standard

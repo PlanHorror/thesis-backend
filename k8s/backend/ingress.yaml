@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  namespace: thesis
+  labels:
+    app: backend
+  annotations:
+    # For Minikube nginx ingress controller
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m' # Allow file uploads
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '60'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '60'
+    # Enable WebSocket support for Socket.io
+    nginx.ingress.kubernetes.io/proxy-http-version: '1.1'
+    nginx.ingress.kubernetes.io/upstream-hash-by: '$remote_addr'
+spec:
+  ingressClassName: nginx
+  rules:
+    # For local development, add this to /etc/hosts:
+    # <minikube-ip> api.thesis.local
+    - host: api.thesis.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80

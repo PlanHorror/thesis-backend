@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: thesis
+  labels:
+    app.kubernetes.io/name: thesis
+    app.kubernetes.io/part-of: thesis-backend
