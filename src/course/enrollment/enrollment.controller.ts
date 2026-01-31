@@ -9,12 +9,21 @@ import {
   Query,
   Patch,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { EnrollmentService } from './enrollment.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Role, RoleGuard, GetUser } from 'common';
 import type { Student, Lecturer } from '@prisma/client';
 import { UpdateGradeDto } from './dto/update-grade.dto';
 
+@ApiTags('Enrollments')
 @Controller('enrollment')
 export class EnrollmentController {
   constructor(private readonly enrollmentService: EnrollmentService) {}
@@ -22,6 +31,17 @@ export class EnrollmentController {
   // Student endpoints
   @Get('my-enrollments')
   @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.STUDENT]))
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: 'Get current student enrollments' })
+  @ApiResponse({
+    status: 200,
+    description: 'Student enrollments returned successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student role required',
+  })
   async getMyEnrollments(@GetUser() student: Student) {
     return this.enrollmentService.findAll(
       false,
@@ -35,6 +55,16 @@ export class EnrollmentController {
 
   @Get('my-enrollments/:id')
   @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.STUDENT]))
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: 'Get student enrollment by ID' })
+  @ApiParam({ name: 'id', description: 'Enrollment ID' })
+  @ApiResponse({ status: 200, description: 'Enrollment found successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student role required',
+  })
+  @ApiResponse({ status: 404, description: 'Enrollment not found' })
   async getMyEnrollmentById(
     @Param('id') id: string,
     @GetUser() student: Student,
@@ -48,6 +78,25 @@ export class EnrollmentController {
 
   @Post('enroll')
   @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.STUDENT]))
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: 'Enroll in a course' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { courseOnSemesterId: { type: 'string' } },
+      required: ['courseOnSemesterId'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Enrolled in course successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student role required',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Already enrolled or invalid course',
+  })
   async enrollInCourse(
     @Body() data: { courseOnSemesterId: string },
     @GetUser() student: Student,
@@ -60,6 +109,19 @@ export class EnrollmentController {
 
   @Delete('unenroll/:id')
   @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.STUDENT]))
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: 'Unenroll from a course' })
+  @ApiParam({ name: 'id', description: 'Enrollment ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Unenrolled from course successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Student role required',
+  })
+  @ApiResponse({ status: 404, description: 'Enrollment not found' })
   async unenrollFromCourse(
     @Param('id') id: string,
     @GetUser() student: Student,
@@ -70,6 +132,21 @@ export class EnrollmentController {
   // Lecturer endpoint
   @Get('course-semester/:courseOnSemesterId')
   @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.LECTURER]))
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: 'Get enrollments by course semester' })
+  @ApiParam({
+    name: 'courseOnSemesterId',
+    description: 'Course on Semester ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Enrollments returned successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Lecturer role required',
+  })
   async getEnrollmentsByCourseOnSemester(
     @Param('courseOnSemesterId') courseOnSemesterId: string,
     @GetUser() lecturer: Lecturer,
@@ -88,6 +165,17 @@ export class EnrollmentController {
 
   @Patch('grade/:enrollmentId')
   @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.LECTURER]))
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({ summary: 'Update student grade' })
+  @ApiParam({ name: 'enrollmentId', description: 'Enrollment ID' })
+  @ApiBody({ type: UpdateGradeDto })
+  @ApiResponse({ status: 200, description: 'Grade updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Lecturer role required',
+  })
+  @ApiResponse({ status: 404, description: 'Enrollment not found' })
   async updateStudentGrade(
     @Param('enrollmentId') enrollmentId: string,
     @Body() data: UpdateGradeDto,
