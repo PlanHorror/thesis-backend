@@ -73,7 +73,7 @@ export class PostController {
     );
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get post by ID' })
   @ApiParam({ name: 'id', description: 'Post ID' })
   @ApiQuery({

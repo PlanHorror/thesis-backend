@@ -82,7 +82,7 @@ export class NotificationController {
     );
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get notification by ID' })
   @ApiParam({ name: 'id', description: 'Notification ID', type: String })
   @ApiResponse({
@@ -116,7 +116,7 @@ export class NotificationController {
     return this.adminService.createNotificationService(data);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @ApiOperation({ summary: 'Update a notification' })
   @ApiParam({ name: 'id', description: 'Notification ID', type: String })
   @ApiBody({ type: UpdateNotificationDto })
@@ -138,7 +138,7 @@ export class NotificationController {
     return this.adminService.updateNotificationService(id, data);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @ApiOperation({ summary: 'Delete a notification' })
   @ApiParam({ name: 'id', description: 'Notification ID', type: String })
   @ApiResponse({

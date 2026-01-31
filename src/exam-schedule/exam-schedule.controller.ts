@@ -49,7 +49,7 @@ export class ExamScheduleController {
   }
 
   // Public endpoint - any authenticated user can get schedule by id
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get exam schedule by ID' })
   @ApiParam({ name: 'id', description: 'Exam Schedule ID' })
   @ApiResponse({ status: 200, description: 'Exam schedule found successfully' })

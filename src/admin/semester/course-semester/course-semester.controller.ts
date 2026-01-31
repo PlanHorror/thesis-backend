@@ -73,7 +73,7 @@ export class CourseSemesterController {
     );
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get course-semester association by ID' })
   @ApiParam({
     name: 'id',

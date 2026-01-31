@@ -48,7 +48,7 @@ export class ExamScheduleController {
     return this.adminService.getAllExamSchedulesService(true);
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get exam schedule by ID' })
   @ApiParam({ name: 'id', description: 'Exam schedule ID', type: String })
   @ApiResponse({
@@ -105,7 +105,7 @@ export class ExamScheduleController {
     return this.adminService.createMultipleExamSchedulesService(data);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @ApiOperation({ summary: 'Update an exam schedule' })
   @ApiParam({ name: 'id', description: 'Exam schedule ID', type: String })
   @ApiBody({ type: UpdateExamScheduleDto })
@@ -127,7 +127,7 @@ export class ExamScheduleController {
     return this.adminService.updateExamScheduleService(id, data);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @ApiOperation({ summary: 'Delete an exam schedule' })
   @ApiParam({ name: 'id', description: 'Exam schedule ID', type: String })
   @ApiResponse({

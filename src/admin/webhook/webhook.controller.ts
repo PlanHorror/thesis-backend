@@ -76,7 +76,7 @@ export class WebhookController {
     );
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get webhook by ID' })
   @ApiParam({ name: 'id', description: 'Webhook ID', type: String })
   @ApiResponse({ status: 200, description: 'Webhook retrieved successfully' })
@@ -104,7 +104,7 @@ export class WebhookController {
     return await this.adminService.createWebhookService(data);
   }
 
-  @Patch(':id')
+  @Patch('update/:id')
   @ApiOperation({ summary: 'Update a webhook' })
   @ApiParam({ name: 'id', description: 'Webhook ID', type: String })
   @ApiBody({ type: UpdateWebhookDto })
@@ -137,7 +137,7 @@ export class WebhookController {
     return await this.adminService.toggleWebhookActiveService(id);
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @ApiOperation({ summary: 'Delete a webhook' })
   @ApiParam({ name: 'id', description: 'Webhook ID', type: String })
   @ApiResponse({ status: 200, description: 'Webhook deleted successfully' })

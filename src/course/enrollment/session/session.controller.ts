@@ -37,7 +37,7 @@ export class SessionController {
     return this.sessionService.findAllActive(true);
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @UseGuards(AuthGuard('accessToken'))
   @ApiOperation({ summary: 'Get active session by ID' })
   @ApiParam({ name: 'id', description: 'Session ID' })

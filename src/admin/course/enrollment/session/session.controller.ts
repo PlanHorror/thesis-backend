@@ -48,7 +48,7 @@ export class SessionController {
     return this.adminService.getAllEnrollmentSessionsService();
   }
 
-  @Get(':id')
+  @Get('find/:id')
   @ApiOperation({ summary: 'Get enrollment session by ID' })
   @ApiParam({ name: 'id', description: 'Enrollment session ID', type: String })
   @ApiResponse({

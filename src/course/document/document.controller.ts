@@ -49,10 +49,10 @@ export class DocumentController {
   }
 
   @UseGuards(AuthGuard('accessToken'))
-  @Get(':id')
+  @Get('find/:id')
   @ApiBearerAuth('accessToken')
   @ApiOperation({ summary: 'Get document by ID' })
-  @ApiQuery({ name: 'id', description: 'Document ID', required: true })
+  @ApiParam({ name: 'id', description: 'Document ID' })
   @ApiResponse({ status: 200, description: 'Document found successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Document not found' })
