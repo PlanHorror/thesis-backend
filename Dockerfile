@@ -61,5 +61,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-# Start the application (NestJS builds to dist/src/main.js)
-CMD ["node", "dist/src/main.js"]
+# Start the application with migrations
+CMD ["sh", "-c", "yarn db:migrate && node dist/src/main.js"]
