@@ -4,15 +4,12 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum NotificationType {
@@ -22,18 +19,16 @@ enum NotificationType {
 }
 
 enum ExamStatus {
-  NOT_ELIGIBLE  
-  ELIGIBLE      
-  ABSENT      
+  NOT_ELIGIBLE
+  ELIGIBLE
+  ABSENT
   COMPLETED
 }
 
-
 enum PostType {
-  NEWS          
-  ANNOUNCEMENT  
+  NEWS
+  ANNOUNCEMENT
 }
-        
 
 model Admin {
   id        String   @id @default(cuid())
@@ -43,89 +38,89 @@ model Admin {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  posts     Post[]
+  posts Post[]
 }
 
-
 model Student {
-  id        String   @id @default(cuid())
-  department Department @relation("DepartmentStudents", fields: [departmentId], references: [id])
+  id           String     @id @default(cuid())
+  department   Department @relation("DepartmentStudents", fields: [departmentId], references: [id])
   departmentId String
-  email     String   @unique
-  username  String   @unique
-  password  String
-  studentId String?  @unique
-  fullName  String?
-  gender    Boolean?
-  birthDate String?
-  citizenId String?  @unique
-  phone     String?  @unique
-  address   String?
-  avatar    String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  email        String     @unique
+  username     String     @unique
+  password     String
+  studentId    String?    @unique
+  fullName     String?
+  gender       Boolean?
+  birthDate    String?
+  citizenId    String?    @unique
+  phone        String?    @unique
+  address      String?
+  avatar       String?
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  enrollments StudentCourseEnrollment[]
+  enrollments   StudentCourseEnrollment[]
   notifications Notification[]
-  webhooks    Webhook[]
+  webhooks      Webhook[]
 }
 
 model Lecturer {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
+  id         String   @id @default(cuid())
+  email      String   @unique
+  username   String   @unique
   lecturerId String   @unique
-  password  String
-  fullName  String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  password   String
+  fullName   String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  departmentHead Department? @relation("DepartmentHead")
+  departmentHead    Department?               @relation("DepartmentHead")
   courseOnSemesters CourseOnSemester[]
-  notifications Notification[]
-  webhooks    Webhook[]
+  teachingRequests  LecturerTeachingRequest[]
+  notifications     Notification[]
+  webhooks          Webhook[]
 }
 
 model Department {
-  id          String   @id @default(cuid())
-  head       Lecturer? @relation("DepartmentHead", fields: [headId], references: [id])
-  headId     String? @unique
-  departmentId String   @unique
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  head         Lecturer? @relation("DepartmentHead", fields: [headId], references: [id])
+  headId       String?   @unique
+  departmentId String    @unique
+  name         String
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  students    Student[]  @relation("DepartmentStudents")
-  courses     Course[]
-  posts       Post[]
+  students Student[] @relation("DepartmentStudents")
+  courses  Course[]
+  posts    Post[]
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  department  Department? @relation(fields: [departmentId], references: [id])
-  departmentId String?
-  name        String
-  description String?
-  semester    String
-  credits     Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String      @id @default(cuid())
+  department          Department? @relation(fields: [departmentId], references: [id])
+  departmentId        String?
+  name                String
+  description         String?
+  recommendedSemester String? // Optional: e.g. "Year 1 Sem 1" – when the course is typically taken (catalog hint). Distinct from offering (CourseOnSemester).
+  credits             Int
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   courseOnSemesters CourseOnSemester[]
 }
 
 model CourseDocument {
-  id        String   @id @default(cuid())
-  courseOnSemester CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
+  id                 String           @id @default(cuid())
+  courseOnSemester   CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
   courseOnSemesterId String
-  title     String
-  path      String   @unique
-  url       String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  title              String
+  path               String           @unique
+  url                String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 }
 
 model Semester {
@@ -136,146 +131,164 @@ model Semester {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courseOnSemesters CourseOnSemester[]
+  courseOnSemesters  CourseOnSemester[]
   enrollmentSessions EnrollmentSession[]
 }
 
 model CourseOnSemester {
-  id          String   @id @default(cuid())
-  course      Course   @relation(fields: [courseId], references: [id])
-  courseId    String
-  semester    Semester @relation(fields: [semesterId], references: [id])
-  semesterId  String
-  lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
-  lecturerId String?
-  location    String?
-  dayOfWeek   Int?
-  startTime   Int?
-  endTime     Int?
-  capacity    Int?
-  isSummarized Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String                    @id @default(cuid())
+  course           Course                    @relation(fields: [courseId], references: [id])
+  courseId         String
+  semester         Semester                  @relation(fields: [semesterId], references: [id])
+  semesterId       String
+  lecturer         Lecturer?                 @relation(fields: [lecturerId], references: [id])
+  lecturerId       String?
+  location         String?
+  dayOfWeek        Int?
+  startTime        Int?
+  endTime          Int?
+  capacity         Int?
+  isSummarized     Boolean                   @default(false)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  enrollments      StudentCourseEnrollment[]
+  documents        CourseDocument[]
+  examSchedule     ExamSchedule?
+  teachingRequests LecturerTeachingRequest[]
 
   @@unique([courseId, semesterId])
-  enrollments StudentCourseEnrollment[]
-  documents   CourseDocument[]
-  examSchedule ExamSchedule?
+}
+
+model LecturerTeachingRequest {
+  id                 String                        @id @default(cuid())
+  lecturer           Lecturer                      @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  lecturerId         String
+  courseOnSemester   CourseOnSemester              @relation(fields: [courseOnSemesterId], references: [id], onDelete: Cascade)
+  courseOnSemesterId String
+  status             LecturerTeachingRequestStatus @default(PENDING)
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+
+  @@unique([lecturerId, courseOnSemesterId])
+}
+
+enum LecturerTeachingRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model StudentCourseEnrollment {
-  id                 String   @id @default(cuid())
-  student            Student  @relation(fields: [studentId], references: [id])
-  studentId         String
-  courseOnSemester  CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
+  id                 String           @id @default(cuid())
+  student            Student          @relation(fields: [studentId], references: [id])
+  studentId          String
+  courseOnSemester   CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
   courseOnSemesterId String
-  gradeType1      Float?
-  gradeType2      Float?
-  gradeType3      Float? 
-  finalGrade      Float?
-  examStatus      ExamStatus @default(ELIGIBLE)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  gradeType1         Float?
+  gradeType2         Float?
+  gradeType3         Float?
+  finalGrade         Float?
+  examStatus         ExamStatus       @default(ELIGIBLE)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@unique([studentId, courseOnSemesterId])
 }
 
 model EnrollmentSession {
-  id          String   @id @default(cuid())
-  name        String?  
-  semester    Semester @relation(fields: [semesterId], references: [id])
-  semesterId  String
-  
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean  @default(true)
+  id         String   @id @default(cuid())
+  name       String?
+  semester   Semester @relation(fields: [semesterId], references: [id])
+  semesterId String
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ExamSchedule {
-  id                String           @id @default(cuid())
-  courseOnSemester  CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
-  courseOnSemesterId String          @unique // One final exam per course instance
-  
-  examDate          String?
-  startTime         DateTime?
-  endTime           DateTime?
-  
-  location          String?          
-  description       String?          
-  
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  id                 String           @id @default(cuid())
+  courseOnSemester   CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id])
+  courseOnSemesterId String           @unique // One final exam per course instance
+
+  examDate  String?
+  startTime DateTime?
+  endTime   DateTime?
+
+  location    String?
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  title       String
-  message     String
-  url         String?
-  type        NotificationType @default(INFO)
+  id      String           @id @default(cuid())
+  title   String
+  message String
+  url     String?
+  type    NotificationType @default(INFO)
 
-  student     Student?  @relation(fields: [studentId], references: [id])
-  studentId   String?
-  lecturer    Lecturer? @relation(fields: [lecturerId], references: [id])
-  lecturerId  String?
+  student    Student?  @relation(fields: [studentId], references: [id])
+  studentId  String?
+  lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
+  lecturerId String?
 
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
- 
+
 model Webhook {
-  id          String   @id @default(cuid())
-  url         String  
-  secret      String?  
-  isActive    Boolean  @default(true)
-  
-  studentId   String?
-  student     Student? @relation(fields: [studentId], references: [id])
-  
-  lecturerId  String?
-  lecturer    Lecturer? @relation(fields: [lecturerId], references: [id])
+  id       String  @id @default(cuid())
+  url      String
+  secret   String?
+  isActive Boolean @default(true)
+
+  studentId String?
+  student   Student? @relation(fields: [studentId], references: [id])
+
+  lecturerId String?
+  lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
 
   webhookLogs WebhookLog[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WebhookLog {
-  id           String   @id @default(cuid())
-  webhookId    String
-  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-  
-  event        String   
-  payload      Json     
-  statusCode   Int?     
-  responseBody String?  
-  duration     Int     
-  
-  createdAt    DateTime @default(now())
+  id        String  @id @default(cuid())
+  webhookId String
+  webhook   Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  event        String
+  payload      Json
+  statusCode   Int?
+  responseBody String?
+  duration     Int
+
+  createdAt DateTime @default(now())
 }
 
-
 model Post {
-  id          String   @id @default(cuid())
-  title       String
-  content     String   @db.Text
-  type        PostType @default(NEWS)
-  
-  admin     Admin    @relation(fields: [adminId], references: [id])
-  adminId   String
+  id      String   @id @default(cuid())
+  title   String
+  content String   @db.Text
+  type    PostType @default(NEWS)
+
+  admin        Admin       @relation(fields: [adminId], references: [id])
+  adminId      String
   // Null means "Global", otherwise specific to a department
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
-  
 
   // Simple Attachments
-  thumbnail   String?      // Main image URL for the feed
+  thumbnail String? // Main image URL for the feed
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
