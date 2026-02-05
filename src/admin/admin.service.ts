@@ -4,64 +4,69 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { Admin, Department, Lecturer, Prisma, Student } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { StudentService } from 'src/user-manager/student/student.service';
-import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
+} from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { Admin, Department, Lecturer, Prisma, Student } from "@prisma/client";
+import * as bcrypt from "bcrypt";
+import { CourseService } from "src/course/course.service";
+import { DocumentService } from "src/course/document/document.service";
+import { EnrollmentService } from "src/course/enrollment/enrollment.service";
+import { SessionService } from "src/course/enrollment/session/session.service";
+import { DepartmentService } from "src/department/department.service";
+import { ExamScheduleService } from "src/exam-schedule/exam-schedule.service";
+import { NotificationService } from "src/notification/notification.service";
+import { PostService } from "src/post/post.service";
+import { PrismaService } from "src/prisma/prisma.service";
+import { CourseSemesterService } from "src/semester/course-semester/course-semester.service";
+import { SemesterService } from "src/semester/semester.service";
+import { LecturerService } from "src/user-manager/lecturer/lecturer.service";
+import { StudentService } from "src/user-manager/student/student.service";
+import { WebhookService } from "src/webhook/webhook.service";
 import {
-  CreateMultipleStudentsDto,
-  CreateStudentDto,
-  UpdateStudentDto,
-} from './dto/student.dto';
-import { DepartmentService } from 'src/department/department.service';
-import * as bcrypt from 'bcrypt';
+  CreateCourseEnrollmentDto,
+  UpdateCourseEnrollmentDto,
+} from "./dto/course-enrollment.dto";
+import {
+  CreateCourseDto,
+  CreateMultipleCoursesDto,
+  UpdateCourseDto,
+} from "./dto/course.dto";
 import {
   CreateDepartmentDto,
   CreateMultipleDepartmentsDto,
   UpdateDepartmentDto,
-} from './dto/department.dto';
-import {
-  CreateLecturerDto,
-  CreateMultipleLecturersDto,
-  UpdateLecturerDto,
-} from './dto/lecturer.dto';
-import { CourseService } from 'src/course/course.service';
-import { DocumentService } from 'src/course/document/document.service';
-import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { SemesterService } from 'src/semester/semester.service';
-import {
-  CourseOnSemesterDto,
-  CreateSemesterDto,
-  UpdateSemesterDto,
-} from './dto/semester.dto';
-import { CourseSemesterService } from 'src/semester/course-semester/course-semester.service';
-import { EnrollmentService } from 'src/course/enrollment/enrollment.service';
-import {
-  CreateCourseEnrollmentDto,
-  UpdateCourseEnrollmentDto,
-} from './dto/course-enrollment.dto';
-import { SessionService } from 'src/course/enrollment/session/session.service';
+} from "./dto/department.dto";
 import {
   CreateEnrollmentSessionDto,
   CreateMultipleEnrollmentSessionsDto,
   UpdateEnrollmentSessionDto,
-} from './dto/enrollment-session.dto';
-import { ExamScheduleService } from 'src/exam-schedule/exam-schedule.service';
+} from "./dto/enrollment-session.dto";
 import {
   CreateExamScheduleDto,
   CreateMultipleExamSchedulesDto,
   UpdateExamScheduleDto,
-} from './dto/exam-schedule.dto';
-import { NotificationService } from 'src/notification/notification.service';
+} from "./dto/exam-schedule.dto";
+import {
+  CreateLecturerDto,
+  CreateMultipleLecturersDto,
+  UpdateLecturerDto,
+} from "./dto/lecturer.dto";
 import {
   CreateNotificationDto,
   UpdateNotificationDto,
-} from './dto/notification.dto';
-import { WebhookService } from 'src/webhook/webhook.service';
-import { CreateWebhookDto, UpdateWebhookDto } from './dto/webhook.dto';
-import { PostService } from 'src/post/post.service';
-import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
+} from "./dto/notification.dto";
+import { CreatePostDto, UpdatePostDto } from "./dto/post.dto";
+import {
+  CourseOnSemesterDto,
+  CreateSemesterDto,
+  UpdateSemesterDto,
+} from "./dto/semester.dto";
+import {
+  CreateMultipleStudentsDto,
+  CreateStudentDto,
+  UpdateStudentDto,
+} from "./dto/student.dto";
+import { CreateWebhookDto, UpdateWebhookDto } from "./dto/webhook.dto";
 
 @Injectable()
 export class AdminService {
@@ -81,6 +86,7 @@ export class AdminService {
     private readonly notificationService: NotificationService,
     private readonly webhookService: WebhookService,
     private readonly postService: PostService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async findAll(): Promise<Admin[]> {
@@ -93,12 +99,12 @@ export class AdminService {
         where: { id },
       });
       if (!admin) {
-        throw new NotFoundException('Admin not found');
+        throw new NotFoundException("Admin not found");
       }
       return admin;
     } catch (error) {
-      this.logger.error('Failed to retrieve admin', error.stack);
-      throw new NotFoundException('Admin not found');
+      this.logger.error("Failed to retrieve admin", error.stack);
+      throw new NotFoundException("Admin not found");
     }
   }
 
@@ -108,12 +114,12 @@ export class AdminService {
         where: { username },
       });
       if (!admin) {
-        throw new NotFoundException('Admin not found');
+        throw new NotFoundException("Admin not found");
       }
       return admin;
     } catch (error) {
-      this.logger.error('Failed to retrieve admin', error.stack);
-      throw new NotFoundException('Admin not found');
+      this.logger.error("Failed to retrieve admin", error.stack);
+      throw new NotFoundException("Admin not found");
     }
   }
 
@@ -122,13 +128,13 @@ export class AdminService {
       return await this.prisma.admin.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           this.logger.warn(`Username ${data.username} already exists`);
-          throw new ConflictException('Username already exists');
+          throw new ConflictException("Username already exists");
         }
       }
-      this.logger.error('Failed to create admin', error.stack);
-      throw new BadRequestException('Failed to create admin');
+      this.logger.error("Failed to create admin", error.stack);
+      throw new BadRequestException("Failed to create admin");
     }
   }
 
@@ -137,19 +143,19 @@ export class AdminService {
       return await this.prisma.admin.update({ where: { id }, data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
+        if (error.code === "P2025") {
           this.logger.warn(`Admin with ID ${id} not found`);
-          throw new NotFoundException('Admin not found');
+          throw new NotFoundException("Admin not found");
         }
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           this.logger.warn(
-            `Username ${typeof data.username === 'string' ? data.username : ''} already exists`,
+            `Username ${typeof data.username === "string" ? data.username : ""} already exists`,
           );
-          throw new ConflictException('Username already exists');
+          throw new ConflictException("Username already exists");
         }
       }
-      this.logger.error('Failed to update admin', error.stack);
-      throw new BadRequestException('Failed to update admin');
+      this.logger.error("Failed to update admin", error.stack);
+      throw new BadRequestException("Failed to update admin");
     }
   }
 
@@ -158,13 +164,13 @@ export class AdminService {
       return await this.prisma.admin.delete({ where: { id } });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
+        if (error.code === "P2025") {
           this.logger.warn(`Admin with ID ${id} not found`);
-          throw new NotFoundException('Admin not found');
+          throw new NotFoundException("Admin not found");
         }
       }
-      this.logger.error('Failed to delete admin', error.stack);
-      throw new BadRequestException('Failed to delete admin');
+      this.logger.error("Failed to delete admin", error.stack);
+      throw new BadRequestException("Failed to delete admin");
     }
   }
 
@@ -183,7 +189,9 @@ export class AdminService {
   async createDepartmentService(
     data: CreateDepartmentDto,
   ): Promise<Department> {
-    return await this.departmentService.create(data);
+    const department = await this.departmentService.create(data);
+    this.eventEmitter.emit("department.created", department);
+    return department;
   }
 
   async createMultipleDepartmentsService(
@@ -214,11 +222,20 @@ export class AdminService {
    */
 
   async getAllStudentAccountsService(): Promise<Student[]> {
-    return await this.studentService.findAll();
+    return this.prisma.student.findMany({
+      include: { department: { select: { id: true, name: true } } },
+    }) as Promise<Student[]>;
   }
 
   async getStudentAccountByIdService(id: string): Promise<Student> {
-    return await this.studentService.findById(id);
+    const student = await this.prisma.student.findUnique({
+      where: { id },
+      include: { department: { select: { id: true, name: true } } },
+    });
+    if (!student) {
+      throw new NotFoundException("Account not found");
+    }
+    return student as unknown as Student;
   }
 
   async getStudentAccountByConditionService(
@@ -273,28 +290,36 @@ export class AdminService {
     id: string,
     data: UpdateStudentDto,
   ): Promise<Student> {
-    const {
-      departmentId,
-
-      newPassword,
-      confirmPassword,
-      ...studentData
-    } = data;
+    const { departmentId, newPassword, confirmPassword, ...studentData } = data;
     let password: string | undefined = undefined;
     if (newPassword && confirmPassword) {
       if (newPassword !== confirmPassword) {
         throw new BadRequestException(
-          'New password and confirm password do not match',
+          "New password and confirm password do not match",
         );
       }
       const salt = await bcrypt.genSalt();
       password = await bcrypt.hash(newPassword, salt);
     }
+    const current = await this.prisma.student.findUnique({
+      where: { id },
+    });
+    if (!current) {
+      throw new NotFoundException("Account not found");
+    }
+    const same = (a: unknown, b: unknown) =>
+      String(a ?? "").trim() === String(b ?? "").trim();
+    const payload: Record<string, unknown> = { ...studentData };
+    if (same(payload.email, current.email)) delete payload.email;
+    if (same(payload.username, current.username)) delete payload.username;
+    if (same(payload.studentId, current.studentId)) delete payload.studentId;
+    if (same(payload.citizenId, current.citizenId)) delete payload.citizenId;
+    if (same(payload.phone, current.phone)) delete payload.phone;
     return await this.studentService.update(id, {
-      ...studentData,
+      ...payload,
       ...(password && { password }),
       ...(departmentId && { department: { connect: { id: departmentId } } }),
-    });
+    } as Prisma.StudentUpdateInput);
   }
 
   async deleteStudentAccountService(id: string): Promise<Student> {
@@ -312,11 +337,16 @@ export class AdminService {
    */
 
   async getAllLecturerAccountsService(): Promise<Lecturer[]> {
-    return await this.lecturerService.findAll();
+    return await this.prisma.lecturer.findMany({
+      include: { departmentHead: true },
+    });
   }
 
   async getLecturerAccountByIdService(id: string): Promise<Lecturer> {
-    return await this.lecturerService.findById(id);
+    return await this.prisma.lecturer.findUniqueOrThrow({
+      where: { id },
+      include: { departmentHead: true },
+    });
   }
 
   async createLecturerAccountService(
@@ -346,16 +376,30 @@ export class AdminService {
     id: string,
     data: UpdateLecturerDto,
   ): Promise<Lecturer> {
-    const { newPassword, confirmPassword, ...lecturerData } = data;
-    let password: string | undefined = undefined;
+    const { newPassword, confirmPassword, departmentHeadId, ...lecturerData } =
+      data;
+    let password: string | undefined;
     if (newPassword && confirmPassword) {
       if (newPassword !== confirmPassword) {
         throw new BadRequestException(
-          'New password and confirm password do not match',
+          "New password and confirm password do not match",
         );
       }
       const salt = await bcrypt.genSalt();
       password = await bcrypt.hash(newPassword, salt);
+    }
+    // Assign lecturer as department head: update Department.headId (FK on Department)
+    if (departmentHeadId !== undefined) {
+      await this.prisma.department.updateMany({
+        where: { headId: id },
+        data: { headId: null },
+      });
+      if (departmentHeadId) {
+        await this.prisma.department.update({
+          where: { id: departmentHeadId },
+          data: { headId: id },
+        });
+      }
     }
     return await this.lecturerService.update(id, {
       ...lecturerData,
@@ -377,8 +421,14 @@ export class AdminService {
    * Admin services methods for managing courses
    */
 
-  async getAllCoursesService(includeDepartment = false) {
-    return await this.courseService.findAll(includeDepartment);
+  async getAllCoursesService(
+    includeDepartment = false,
+    includeCourseOnSemesters = false,
+  ) {
+    return await this.courseService.findAll(
+      includeDepartment,
+      includeCourseOnSemesters,
+    );
   }
 
   async getAllCoursesByDepartmentIdService(
@@ -391,31 +441,69 @@ export class AdminService {
     );
   }
 
-  async getCourseByIdService(id: string, includeDepartment = false) {
-    return await this.courseService.findOne(id, includeDepartment);
+  async getCourseByIdService(
+    id: string,
+    includeDepartment = false,
+    includeCourseOnSemesters = false,
+  ) {
+    return await this.courseService.findOne(
+      id,
+      includeDepartment,
+      includeCourseOnSemesters,
+    );
   }
 
   async createCourseService(data: CreateCourseDto) {
-    const { departmentId, ...courseData } = data;
+    const { departmentId, semesterId, recommendedSemester, ...courseData } =
+      data;
     const createdCourse = await this.courseService.create({
       ...courseData,
-      department: { connect: { id: departmentId } },
+      ...(recommendedSemester?.trim() && {
+        recommendedSemester: recommendedSemester.trim(),
+      }),
+      ...(departmentId && {
+        department: { connect: { id: departmentId } },
+      }),
     });
+    if (semesterId) {
+      await this.courseOnSemesterService.create({
+        course: { connect: { id: createdCourse.id } },
+        semester: { connect: { id: semesterId } },
+      });
+    }
+    this.eventEmitter.emit("course.created", createdCourse);
     return {
-      message: 'Course created successfully',
+      message: "Course created successfully",
     };
   }
 
+  async createMultipleCoursesService(data: CreateMultipleCoursesDto) {
+    const courses = data.courses.map((c) => ({
+      name: c.name,
+      credits: c.credits,
+      ...(c.departmentId && { departmentId: c.departmentId }),
+      ...(c.recommendedSemester?.trim() && {
+        recommendedSemester: c.recommendedSemester.trim(),
+      }),
+      ...(c.description?.trim() && { description: c.description.trim() }),
+    }));
+    const result = await this.courseService.createMany(courses);
+    return { message: result.message, created: result.count };
+  }
+
   async updateCourseService(id: string, data: UpdateCourseDto) {
-    const { departmentId, ...courseData } = data;
+    const { departmentId, recommendedSemester, ...courseData } = data;
     await this.courseService.update(id, {
       ...courseData,
+      ...(recommendedSemester !== undefined && {
+        recommendedSemester: recommendedSemester?.trim() || null,
+      }),
       ...(departmentId && {
         department: { connect: { id: departmentId } },
       }),
     });
     return {
-      message: 'Course updated successfully',
+      message: "Course updated successfully",
     };
   }
 
@@ -480,12 +568,16 @@ export class AdminService {
   async getAllCoursesOnSemestersService(
     includeCourses = false,
     includeSemesters = false,
+    includeLecturer = false,
+    includeEnrollmentCount = false,
     courseId?: string,
     semesterId?: string,
   ) {
     return await this.courseOnSemesterService.findAll(
       includeCourses,
       includeSemesters,
+      includeLecturer,
+      includeEnrollmentCount,
       courseId,
       semesterId,
     );
@@ -511,28 +603,45 @@ export class AdminService {
       semesterId,
       courseId,
       lecturerId,
+      dayOfWeek,
+      startTime,
+      endTime,
       courseDocuments,
-      ...courseOnSemesterData
+      createDocuments,
+      updateDocuments,
+      deleteDocumentIds,
+      ...rest
     } = data;
-    if (
-      await this.prisma.courseOnSemester.findFirst({
+
+    const hasSchedule =
+      lecturerId != null &&
+      dayOfWeek != null &&
+      startTime != null &&
+      endTime != null;
+    if (hasSchedule) {
+      const conflict = await this.prisma.courseOnSemester.findFirst({
         where: {
-          lecturerId: lecturerId,
-          dayOfWeek: courseOnSemesterData.dayOfWeek,
-          startTime: { lt: courseOnSemesterData.endTime },
-          endTime: { gt: courseOnSemesterData.startTime },
+          lecturerId,
+          dayOfWeek,
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
         },
-      })
-    ) {
-      throw new BadRequestException(
-        `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${courseOnSemesterData.dayOfWeek} between ${courseOnSemesterData.startTime} and ${courseOnSemesterData.endTime}`,
-      );
+      });
+      if (conflict) {
+        throw new BadRequestException(
+          `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${dayOfWeek} between ${startTime} and ${endTime}`,
+        );
+      }
     }
+
     const createdCourseOnSemester = await this.courseOnSemesterService.create({
-      ...courseOnSemesterData,
+      ...rest,
+      ...(dayOfWeek != null && { dayOfWeek }),
+      ...(startTime != null && { startTime }),
+      ...(endTime != null && { endTime }),
       semester: { connect: { id: semesterId } },
       course: { connect: { id: courseId } },
-      lecturer: { connect: { id: lecturerId } },
+      ...(lecturerId && { lecturer: { connect: { id: lecturerId } } }),
     });
 
     if (courseDocuments && courseDocuments.length > 0) {
@@ -632,7 +741,7 @@ export class AdminService {
     ]);
 
     return {
-      message: 'Course on semester updated successfully',
+      message: "Course on semester updated successfully",
     };
   }
 
@@ -727,7 +836,7 @@ export class AdminService {
     try {
       return await this.sessionService.findAll(true);
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment sessions', error);
+      this.logger.error("Failed to retrieve enrollment sessions", error);
       throw error;
     }
   }
@@ -736,7 +845,7 @@ export class AdminService {
     try {
       return await this.sessionService.findById(id, true);
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment session', error);
+      this.logger.error("Failed to retrieve enrollment session", error);
       throw error;
     }
   }
@@ -745,7 +854,7 @@ export class AdminService {
     try {
       return await this.sessionService.findBySemesterId(semesterId, true);
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment sessions', error);
+      this.logger.error("Failed to retrieve enrollment sessions", error);
       throw error;
     }
   }
@@ -760,7 +869,7 @@ export class AdminService {
         semester: { connect: { id: data.semesterId } },
       });
     } catch (error) {
-      this.logger.error('Failed to create enrollment session', error);
+      this.logger.error("Failed to create enrollment session", error);
       throw error;
     }
   }
@@ -778,7 +887,7 @@ export class AdminService {
       }));
       return await this.sessionService.createMany(formattedSessions);
     } catch (error) {
-      this.logger.error('Failed to create enrollment sessions', error);
+      this.logger.error("Failed to create enrollment sessions", error);
       throw error;
     }
   }
@@ -800,7 +909,7 @@ export class AdminService {
 
       return await this.sessionService.update(id, updateData);
     } catch (error) {
-      this.logger.error('Failed to update enrollment session', error);
+      this.logger.error("Failed to update enrollment session", error);
       throw error;
     }
   }
@@ -809,7 +918,7 @@ export class AdminService {
     try {
       return await this.sessionService.delete(id);
     } catch (error) {
-      this.logger.error('Failed to delete enrollment session', error);
+      this.logger.error("Failed to delete enrollment session", error);
       throw error;
     }
   }
@@ -818,7 +927,7 @@ export class AdminService {
     try {
       return await this.sessionService.deleteMany(ids);
     } catch (error) {
-      this.logger.error('Failed to delete enrollment sessions', error);
+      this.logger.error("Failed to delete enrollment sessions", error);
       throw error;
     }
   }
@@ -829,7 +938,7 @@ export class AdminService {
     try {
       return await this.examScheduleService.findAll(includeCourseOnSemester);
     } catch (error) {
-      this.logger.error('Failed to retrieve exam schedules', error);
+      this.logger.error("Failed to retrieve exam schedules", error);
       throw error;
     }
   }
@@ -844,7 +953,7 @@ export class AdminService {
         includeCourseOnSemester,
       );
     } catch (error) {
-      this.logger.error('Failed to retrieve exam schedule', error);
+      this.logger.error("Failed to retrieve exam schedule", error);
       throw error;
     }
   }
@@ -861,7 +970,7 @@ export class AdminService {
       };
       return await this.examScheduleService.create(examScheduleData);
     } catch (error) {
-      this.logger.error('Failed to create exam schedule', error);
+      this.logger.error("Failed to create exam schedule", error);
       throw error;
     }
   }
@@ -882,7 +991,7 @@ export class AdminService {
       }));
       return await this.examScheduleService.createMany(examSchedules);
     } catch (error) {
-      this.logger.error('Failed to create exam schedules', error);
+      this.logger.error("Failed to create exam schedules", error);
       throw error;
     }
   }
@@ -906,7 +1015,7 @@ export class AdminService {
 
       return await this.examScheduleService.update(id, updateData);
     } catch (error) {
-      this.logger.error('Failed to update exam schedule', error);
+      this.logger.error("Failed to update exam schedule", error);
       throw error;
     }
   }
@@ -915,7 +1024,7 @@ export class AdminService {
     try {
       return await this.examScheduleService.delete(id);
     } catch (error) {
-      this.logger.error('Failed to delete exam schedule', error);
+      this.logger.error("Failed to delete exam schedule", error);
       throw error;
     }
   }
@@ -924,7 +1033,7 @@ export class AdminService {
     try {
       return await this.examScheduleService.deleteMany(ids);
     } catch (error) {
-      this.logger.error('Failed to delete exam schedules', error);
+      this.logger.error("Failed to delete exam schedules", error);
       throw error;
     }
   }
@@ -935,7 +1044,7 @@ export class AdminService {
     try {
       return await this.notificationService.findAll();
     } catch (error) {
-      this.logger.error('Failed to retrieve notifications', error);
+      this.logger.error("Failed to retrieve notifications", error);
       throw error;
     }
   }
@@ -944,7 +1053,7 @@ export class AdminService {
     try {
       return await this.notificationService.findById(id);
     } catch (error) {
-      this.logger.error('Failed to retrieve notification', error);
+      this.logger.error("Failed to retrieve notification", error);
       throw error;
     }
   }
@@ -953,7 +1062,7 @@ export class AdminService {
     try {
       return await this.notificationService.findByUser(lecturerId, studentId);
     } catch (error) {
-      this.logger.error('Failed to retrieve notifications', error);
+      this.logger.error("Failed to retrieve notifications", error);
       throw error;
     }
   }
@@ -971,7 +1080,7 @@ export class AdminService {
       };
       return await this.notificationService.create(notificationData);
     } catch (error) {
-      this.logger.error('Failed to create notification', error);
+      this.logger.error("Failed to create notification", error);
       throw error;
     }
   }
@@ -992,7 +1101,7 @@ export class AdminService {
 
       return await this.notificationService.update(id, updateData);
     } catch (error) {
-      this.logger.error('Failed to update notification', error);
+      this.logger.error("Failed to update notification", error);
       throw error;
     }
   }
@@ -1001,7 +1110,7 @@ export class AdminService {
     try {
       return await this.notificationService.delete(id);
     } catch (error) {
-      this.logger.error('Failed to delete notification', error);
+      this.logger.error("Failed to delete notification", error);
       throw error;
     }
   }
@@ -1011,7 +1120,7 @@ export class AdminService {
     try {
       return await this.webhookService.findAll();
     } catch (error) {
-      this.logger.error('Failed to get all webhooks', error);
+      this.logger.error("Failed to get all webhooks", error);
       throw error;
     }
   }
@@ -1020,7 +1129,7 @@ export class AdminService {
     try {
       return await this.webhookService.findById(id);
     } catch (error) {
-      this.logger.error('Failed to get webhook by id', error);
+      this.logger.error("Failed to get webhook by id", error);
       throw error;
     }
   }
@@ -1029,7 +1138,7 @@ export class AdminService {
     try {
       return await this.webhookService.findByUser(lecturerId, studentId);
     } catch (error) {
-      this.logger.error('Failed to get webhooks by user', error);
+      this.logger.error("Failed to get webhooks by user", error);
       throw error;
     }
   }
@@ -1046,7 +1155,7 @@ export class AdminService {
       };
       return await this.webhookService.create(webhookData);
     } catch (error) {
-      this.logger.error('Failed to create webhook', error);
+      this.logger.error("Failed to create webhook", error);
       throw error;
     }
   }
@@ -1065,7 +1174,7 @@ export class AdminService {
 
       return await this.webhookService.update(id, updateData);
     } catch (error) {
-      this.logger.error('Failed to update webhook', error);
+      this.logger.error("Failed to update webhook", error);
       throw error;
     }
   }
@@ -1074,7 +1183,7 @@ export class AdminService {
     try {
       return await this.webhookService.delete(id);
     } catch (error) {
-      this.logger.error('Failed to delete webhook', error);
+      this.logger.error("Failed to delete webhook", error);
       throw error;
     }
   }
@@ -1083,7 +1192,7 @@ export class AdminService {
     try {
       return await this.webhookService.toggleActive(id);
     } catch (error) {
-      this.logger.error('Failed to toggle webhook active', error);
+      this.logger.error("Failed to toggle webhook active", error);
       throw error;
     }
   }
@@ -1093,7 +1202,7 @@ export class AdminService {
     try {
       return await this.postService.findAll(includeAdmin, includeDepartment);
     } catch (error) {
-      this.logger.error('Failed to retrieve posts', error);
+      this.logger.error("Failed to retrieve posts", error);
       throw error;
     }
   }
@@ -1110,7 +1219,7 @@ export class AdminService {
         includeDepartment,
       );
     } catch (error) {
-      this.logger.error('Failed to retrieve post', error);
+      this.logger.error("Failed to retrieve post", error);
       throw error;
     }
   }
@@ -1127,7 +1236,7 @@ export class AdminService {
         includeDepartment,
       );
     } catch (error) {
-      this.logger.error('Failed to retrieve posts by department', error);
+      this.logger.error("Failed to retrieve posts by department", error);
       throw error;
     }
   }
@@ -1139,7 +1248,7 @@ export class AdminService {
         includeDepartment,
       );
     } catch (error) {
-      this.logger.error('Failed to retrieve global posts', error);
+      this.logger.error("Failed to retrieve global posts", error);
       throw error;
     }
   }
@@ -1157,7 +1266,7 @@ export class AdminService {
         }),
       });
     } catch (error) {
-      this.logger.error('Failed to create post', error);
+      this.logger.error("Failed to create post", error);
       throw error;
     }
   }
@@ -1179,7 +1288,7 @@ export class AdminService {
 
       return await this.postService.update(id, updateData);
     } catch (error) {
-      this.logger.error('Failed to update post', error);
+      this.logger.error("Failed to update post", error);
       throw error;
     }
   }
@@ -1188,7 +1297,7 @@ export class AdminService {
     try {
       return await this.postService.delete(id);
     } catch (error) {
-      this.logger.error('Failed to delete post', error);
+      this.logger.error("Failed to delete post", error);
       throw error;
     }
   }
@@ -1197,7 +1306,7 @@ export class AdminService {
     try {
       return await this.postService.deleteMany(ids);
     } catch (error) {
-      this.logger.error('Failed to delete posts', error);
+      this.logger.error("Failed to delete posts", error);
       throw error;
     }
   }

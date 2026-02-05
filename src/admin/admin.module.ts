@@ -27,10 +27,13 @@ import { WebhookController } from './webhook/webhook.controller';
 import { WebhookModule } from 'src/webhook/webhook.module';
 import { PostController } from './post/post.controller';
 import { PostModule } from 'src/post/post.module';
+import { AdminRequestController } from './request/request.controller';
+import { RequestModule } from 'src/request/request.module';
 
 @Module({
   controllers: [
     AdminController,
+    AdminRequestController,
     LecturerController,
     StudentController,
     DepartmentController,
@@ -60,6 +63,7 @@ import { PostModule } from 'src/post/post.module';
     NotificationModule,
     WebhookModule,
     PostModule,
+    RequestModule,
   ],
 })
 export class AdminModule {}
