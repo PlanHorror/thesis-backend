@@ -44,6 +44,18 @@ export class CourseSemesterController {
     type: Boolean,
   })
   @ApiQuery({
+    name: 'includeLecturer',
+    required: false,
+    description: 'Include lecturer details',
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'includeEnrollmentCount',
+    required: false,
+    description: 'Include enrollment count',
+    type: Boolean,
+  })
+  @ApiQuery({
     name: 'courseId',
     required: false,
     description: 'Filter by course ID',
@@ -62,12 +74,16 @@ export class CourseSemesterController {
   async getAllCourseSemesters(
     @Query('includeCourses') includeCourses: boolean,
     @Query('includeSemesters') includeSemesters: boolean,
+    @Query('includeLecturer') includeLecturer: boolean,
+    @Query('includeEnrollmentCount') includeEnrollmentCount: boolean,
     @Query('courseId') courseId: string,
     @Query('semesterId') semesterId: string,
   ) {
     return this.adminService.getAllCoursesOnSemestersService(
       isBoolean(includeCourses) ? includeCourses : false,
       isBoolean(includeSemesters) ? includeSemesters : false,
+      isBoolean(includeLecturer) ? includeLecturer : false,
+      isBoolean(includeEnrollmentCount) ? includeEnrollmentCount : false,
       isString(courseId) ? courseId : undefined,
       isString(semesterId) ? semesterId : undefined,
     );
