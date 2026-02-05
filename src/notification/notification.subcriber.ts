@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
 import {
   NotificationType,
   PostType,
+  type Course,
   type CourseDocument,
   type CourseOnSemester,
+  type Department,
   type EnrollmentSession,
   type ExamSchedule,
   type Lecturer,
@@ -12,11 +14,11 @@ import {
   type Semester,
   type Student,
   type StudentCourseEnrollment,
-} from '@prisma/client';
-import { AppGateway } from 'src/gateway/gateway.gateway';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { WebhookService } from 'src/webhook/webhook.service';
-import { NotificationService } from './notification.service';
+} from "@prisma/client";
+import { AppGateway } from "src/gateway/gateway.gateway";
+import { PrismaService } from "src/prisma/prisma.service";
+import { WebhookService } from "src/webhook/webhook.service";
+import { NotificationService } from "./notification.service";
 
 @Injectable()
 export class NotificationSubscriber {
@@ -31,7 +33,7 @@ export class NotificationSubscriber {
 
   // ==================== Course Enrollment Events ====================
 
-  @OnEvent('enrollment.created')
+  @OnEvent("enrollment.created")
   async onEnrollmentCreated(
     enrollment: StudentCourseEnrollment,
     courseName: string,
@@ -45,7 +47,7 @@ export class NotificationSubscriber {
         connect: { id: enrollment.studentId },
       },
       type: NotificationType.INFO,
-      title: 'Enrollment Successful',
+      title: "Enrollment Successful",
       message: `You have been successfully enrolled in the course: ${courseName}.`,
       url: `/courses/${enrollment.courseOnSemesterId}`,
     });
@@ -53,7 +55,7 @@ export class NotificationSubscriber {
     await this.webhookService.triggerWebhooksForNotifications([notification]);
   }
 
-  @OnEvent('enrollment.deleted')
+  @OnEvent("enrollment.deleted")
   async onEnrollmentDeleted(
     enrollment: StudentCourseEnrollment,
     courseName: string,
@@ -66,14 +68,14 @@ export class NotificationSubscriber {
         connect: { id: enrollment.studentId },
       },
       type: NotificationType.INFO,
-      title: 'Enrollment Removed',
+      title: "Enrollment Removed",
       message: `Your enrollment in the course: ${courseName} has been removed.`,
     });
     this.webSocketGateway.sendNotificationToUser(notification);
     await this.webhookService.triggerWebhooksForNotifications([notification]);
   }
 
-  @OnEvent('enrollment.deleted_by_admin')
+  @OnEvent("enrollment.deleted_by_admin")
   async onEnrollmentDeletedByAdmin(
     enrollment: StudentCourseEnrollment,
     courseName: string,
@@ -86,7 +88,7 @@ export class NotificationSubscriber {
         connect: { id: enrollment.studentId },
       },
       type: NotificationType.WARNING,
-      title: 'Enrollment Removed by Admin',
+      title: "Enrollment Removed by Admin",
       message: `Your enrollment in the course: ${courseName} has been removed by an administrator.`,
     });
     this.webSocketGateway.sendNotificationToUser(notification);
@@ -95,7 +97,50 @@ export class NotificationSubscriber {
 
   // ==================== Enrollment Session Events ====================
 
-  @OnEvent('enrollment_session.opened')
+  @OnEvent("enrollment_session.created")
+  async onEnrollmentSessionCreated(
+    session: EnrollmentSession,
+    semesterName: string,
+  ): Promise<void> {
+    this.logger.log(
+      `Event: enrollment_session.created - Session: ${session.id}`,
+    );
+
+    const students = await this.prisma.student.findMany({
+      where: { active: true },
+      select: { id: true },
+    });
+
+    if (students.length === 0) {
+      this.logger.log("No active students to notify");
+      return;
+    }
+
+    const startStr = session.startDate.toLocaleDateString();
+    const endStr = session.endDate.toLocaleDateString();
+    const notifications = await this.prisma.$transaction(
+      students.map((student) =>
+        this.prisma.notification.create({
+          data: {
+            studentId: student.id,
+            type: NotificationType.INFO,
+            title: "New Enrollment Session Scheduled",
+            message: `A new enrollment session "${session.name || semesterName}" for ${semesterName} has been scheduled (${startStr} – ${endStr}). You can enroll when it opens.`,
+          },
+        }),
+      ),
+    );
+
+    for (const notification of notifications) {
+      this.webSocketGateway.sendNotificationToUser(notification);
+    }
+    await this.webhookService.triggerWebhooksForNotifications(notifications);
+    this.logger.log(
+      `Sent enrollment session created notifications to ${notifications.length} students`,
+    );
+  }
+
+  @OnEvent("enrollment_session.opened")
   async onEnrollmentSessionOpened(
     session: EnrollmentSession,
     semesterName: string,
@@ -111,7 +156,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No active students to notify');
+      this.logger.log("No active students to notify");
       return;
     }
 
@@ -122,7 +167,7 @@ export class NotificationSubscriber {
           data: {
             studentId: student.id,
             type: NotificationType.INFO,
-            title: 'Enrollment Session Opened',
+            title: "Enrollment Session Opened",
             message: `Enrollment session "${session.name || semesterName}" is now open. You can enroll in courses until ${session.endDate.toLocaleDateString()}.`,
           },
         }),
@@ -138,7 +183,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('enrollment_session.closing_soon')
+  @OnEvent("enrollment_session.closing_soon")
   async onEnrollmentSessionClosingSoon(
     session: EnrollmentSession,
     semesterName: string,
@@ -157,7 +202,7 @@ export class NotificationSubscriber {
           data: {
             studentId: student.id,
             type: NotificationType.WARNING,
-            title: 'Enrollment Session Closing Soon',
+            title: "Enrollment Session Closing Soon",
             message: `Enrollment session "${session.name || semesterName}" is closing soon on ${session.endDate.toLocaleDateString()}. Please complete your course enrollments before the deadline.`,
           },
         }),
@@ -173,7 +218,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('enrollment_session.closed')
+  @OnEvent("enrollment_session.closed")
   async onEnrollmentSessionClosed(session: EnrollmentSession): Promise<void> {
     this.logger.log(
       `Event: enrollment_session.closed - Session: ${session.id}`,
@@ -189,7 +234,7 @@ export class NotificationSubscriber {
           data: {
             studentId: student.id,
             type: NotificationType.INFO,
-            title: 'Enrollment Session Closed',
+            title: "Enrollment Session Closed",
             message: `Enrollment session "${session.name}" has now closed. You can no longer enroll in courses for this semester.`,
           },
         }),
@@ -207,7 +252,7 @@ export class NotificationSubscriber {
 
   // ==================== Exam Schedule Events ====================
 
-  @OnEvent('exam_schedule.created')
+  @OnEvent("exam_schedule.created")
   async onExamScheduleCreated(examSchedule: ExamSchedule): Promise<void> {
     this.logger.log(
       `Event: exam_schedule.created - ExamSchedule: ${examSchedule.id}`,
@@ -219,7 +264,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -229,7 +274,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'New Exam Scheduled',
+            title: "New Exam Scheduled",
             message: `A new exam has been scheduled. Please check the exam schedule for details.`,
             url: `/exam-schedules/${examSchedule.id}`,
           },
@@ -246,7 +291,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('exam_schedule.updated')
+  @OnEvent("exam_schedule.updated")
   async onExamScheduleUpdated(examSchedule: ExamSchedule): Promise<void> {
     this.logger.log(
       `Event: exam_schedule.updated - ExamSchedule: ${examSchedule.id}`,
@@ -258,7 +303,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -268,7 +313,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'Exam Schedule Updated',
+            title: "Exam Schedule Updated",
             message: `The exam schedule has been updated. Please check the exam schedule for the latest details.`,
             url: `/exam-schedules/${examSchedule.id}`,
           },
@@ -285,7 +330,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('exam_schedule.deleted')
+  @OnEvent("exam_schedule.deleted")
   async onExamScheduleDeleted(
     courseOnSemesterId: string,
     courseName: string,
@@ -300,7 +345,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -310,7 +355,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.WARNING,
-            title: 'Exam Schedule Cancelled',
+            title: "Exam Schedule Cancelled",
             message: `The exam schedule for "${courseName}" has been cancelled.`,
           },
         }),
@@ -326,7 +371,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('exam_schedule.reminder')
+  @OnEvent("exam_schedule.reminder")
   async onExamScheduleReminder(examSchedule: ExamSchedule): Promise<void> {
     this.logger.log(
       `Event: exam_schedule.reminder - ExamSchedule: ${examSchedule.id}`,
@@ -338,7 +383,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -348,7 +393,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'Exam Reminder',
+            title: "Exam Reminder",
             message: `This is a reminder for your upcoming exam. Please check the exam schedule for details.`,
             url: `/exam-schedules/${examSchedule.id}`,
           },
@@ -367,7 +412,7 @@ export class NotificationSubscriber {
 
   // ==================== Course Document Events ====================
 
-  @OnEvent('document.created')
+  @OnEvent("document.created")
   async onDocumentCreated(document: CourseDocument): Promise<void> {
     this.logger.log(`Event: document.created - Document: ${document.id}`);
     // TODO: Implement - notify enrolled students
@@ -377,7 +422,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -387,7 +432,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'New Course Document Available',
+            title: "New Course Document Available",
             message: `A new document "${document.title}" has been added to your course. Please check the course materials for details.`,
             url: `/courses/${document.courseOnSemesterId}/documents/${document.id}`,
           },
@@ -404,7 +449,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('document.updated')
+  @OnEvent("document.updated")
   async onDocumentUpdated(document: CourseDocument): Promise<void> {
     this.logger.log(`Event: document.updated - Document: ${document.id}`);
 
@@ -414,7 +459,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -424,7 +469,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'Course Document Updated',
+            title: "Course Document Updated",
             message: `The document "${document.title}" has been updated.`,
             url: `/courses/${document.courseOnSemesterId}/documents/${document.id}`,
           },
@@ -441,7 +486,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('document.deleted')
+  @OnEvent("document.deleted")
   async onDocumentDeleted(
     courseOnSemesterId: string,
     documentTitle: string,
@@ -456,7 +501,7 @@ export class NotificationSubscriber {
     });
 
     if (students.length === 0) {
-      this.logger.log('No enrolled students to notify');
+      this.logger.log("No enrolled students to notify");
       return;
     }
 
@@ -466,7 +511,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'Course Document Removed',
+            title: "Course Document Removed",
             message: `The document "${documentTitle}" has been removed from the course.`,
           },
         }),
@@ -484,7 +529,7 @@ export class NotificationSubscriber {
 
   // ==================== Course on Semester Events ====================
 
-  @OnEvent('course_semester.updated')
+  @OnEvent("course_semester.updated")
   async onCourseSemesterUpdated(
     courseOnSemester: CourseOnSemester,
     courseName: string,
@@ -505,7 +550,7 @@ export class NotificationSubscriber {
           data: {
             studentId: enrollment.studentId,
             type: NotificationType.INFO,
-            title: 'Course Information Updated',
+            title: "Course Information Updated",
             message: `The course "${courseName}" information has been updated. Please check for schedule or location changes.`,
             url: `/courses/${courseOnSemester.id}`,
           },
@@ -520,7 +565,7 @@ export class NotificationSubscriber {
         data: {
           lecturerId: courseOnSemester.lecturerId,
           type: NotificationType.INFO,
-          title: 'Course Information Updated',
+          title: "Course Information Updated",
           message: `The course "${courseName}" you are teaching has been updated.`,
           url: `/courses/${courseOnSemester.id}`,
         },
@@ -539,7 +584,7 @@ export class NotificationSubscriber {
 
   // ==================== Student Account Events ====================
 
-  @OnEvent('student.created')
+  @OnEvent("student.created")
   async onStudentCreated(student: Student): Promise<void> {
     this.logger.log(`Event: student.created - Student: ${student.id}`);
 
@@ -547,7 +592,7 @@ export class NotificationSubscriber {
       data: {
         studentId: student.id,
         type: NotificationType.INFO,
-        title: 'Welcome to the System',
+        title: "Welcome to the System",
         message: `Welcome ${student.fullName || student.username}! Your account has been created successfully.`,
       },
     });
@@ -556,7 +601,7 @@ export class NotificationSubscriber {
     await this.webhookService.triggerWebhooksForNotifications([notification]);
   }
 
-  @OnEvent('student.password_changed')
+  @OnEvent("student.password_changed")
   async onStudentPasswordChanged(student: Student): Promise<void> {
     this.logger.log(`Event: student.password_changed - Student: ${student.id}`);
 
@@ -564,9 +609,9 @@ export class NotificationSubscriber {
       data: {
         studentId: student.id,
         type: NotificationType.WARNING,
-        title: 'Password Changed',
+        title: "Password Changed",
         message:
-          'Your password has been changed. If you did not make this change, please contact support immediately.',
+          "Your password has been changed. If you did not make this change, please contact support immediately.",
       },
     });
 
@@ -576,7 +621,7 @@ export class NotificationSubscriber {
 
   // ==================== Lecturer Account Events ====================
 
-  @OnEvent('lecturer.created')
+  @OnEvent("lecturer.created")
   async onLecturerCreated(lecturer: Lecturer): Promise<void> {
     this.logger.log(`Event: lecturer.created - Lecturer: ${lecturer.id}`);
 
@@ -584,7 +629,7 @@ export class NotificationSubscriber {
       data: {
         lecturerId: lecturer.id,
         type: NotificationType.INFO,
-        title: 'Welcome to the System',
+        title: "Welcome to the System",
         message: `Welcome ${lecturer.fullName || lecturer.username}! Your lecturer account has been created successfully.`,
       },
     });
@@ -593,7 +638,7 @@ export class NotificationSubscriber {
     await this.webhookService.triggerWebhooksForNotifications([notification]);
   }
 
-  @OnEvent('lecturer.password_changed')
+  @OnEvent("lecturer.password_changed")
   async onLecturerPasswordChanged(lecturer: Lecturer): Promise<void> {
     this.logger.log(
       `Event: lecturer.password_changed - Lecturer: ${lecturer.id}`,
@@ -603,9 +648,55 @@ export class NotificationSubscriber {
       data: {
         lecturerId: lecturer.id,
         type: NotificationType.WARNING,
-        title: 'Password Changed',
+        title: "Password Changed",
         message:
-          'Your password has been changed. If you did not make this change, please contact support immediately.',
+          "Your password has been changed. If you did not make this change, please contact support immediately.",
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToUser(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  @OnEvent("lecturer_request.approved")
+  async onLecturerRequestApproved(payload: {
+    lecturerId: string;
+    courseName: string;
+    semesterName: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: lecturer_request.approved - Lecturer: ${payload.lecturerId}`,
+    );
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        lecturerId: payload.lecturerId,
+        type: NotificationType.INFO,
+        title: "Teaching Request Approved",
+        message: `Your request to teach "${payload.courseName}" (${payload.semesterName}) has been approved. You are now assigned to this course.`,
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToUser(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  @OnEvent("lecturer_request.rejected")
+  async onLecturerRequestRejected(payload: {
+    lecturerId: string;
+    courseName: string;
+    semesterName: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: lecturer_request.rejected - Lecturer: ${payload.lecturerId}`,
+    );
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        lecturerId: payload.lecturerId,
+        type: NotificationType.WARNING,
+        title: "Teaching Request Declined",
+        message: `Your request to teach "${payload.courseName}" (${payload.semesterName}) has been declined.`,
       },
     });
 
@@ -615,7 +706,7 @@ export class NotificationSubscriber {
 
   // ==================== Semester Events ====================
 
-  @OnEvent('semester.started')
+  @OnEvent("semester.started")
   async onSemesterStarted(semester: Semester): Promise<void> {
     this.logger.log(`Event: semester.started - Semester: ${semester.id}`);
 
@@ -637,7 +728,7 @@ export class NotificationSubscriber {
           data: {
             studentId: student.id,
             type: NotificationType.INFO,
-            title: 'New Semester Started',
+            title: "New Semester Started",
             message: `Semester "${semester.name}" has officially started. Good luck with your studies!`,
           },
         }),
@@ -650,7 +741,7 @@ export class NotificationSubscriber {
           data: {
             lecturerId: lecturer.id,
             type: NotificationType.INFO,
-            title: 'New Semester Started',
+            title: "New Semester Started",
             message: `Semester "${semester.name}" has officially started.`,
           },
         }),
@@ -670,7 +761,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('semester.ending_soon')
+  @OnEvent("semester.ending_soon")
   async onSemesterEndingSoon(semester: Semester): Promise<void> {
     this.logger.log(`Event: semester.ending_soon - Semester: ${semester.id}`);
 
@@ -692,7 +783,7 @@ export class NotificationSubscriber {
           data: {
             studentId: student.id,
             type: NotificationType.WARNING,
-            title: 'Semester Ending Soon',
+            title: "Semester Ending Soon",
             message: `Semester "${semester.name}" is ending on ${semester.endDate.toLocaleDateString()}. Please complete all pending work.`,
           },
         }),
@@ -705,7 +796,7 @@ export class NotificationSubscriber {
           data: {
             lecturerId: lecturer.id,
             type: NotificationType.WARNING,
-            title: 'Semester Ending Soon',
+            title: "Semester Ending Soon",
             message: `Semester "${semester.name}" is ending on ${semester.endDate.toLocaleDateString()}. Please finalize grades and course materials.`,
           },
         }),
@@ -725,9 +816,127 @@ export class NotificationSubscriber {
     );
   }
 
+  // ==================== Course Events ====================
+
+  @OnEvent("course.created")
+  async onCourseCreated(course: Course): Promise<void> {
+    this.logger.log(`Event: course.created - Course: ${course.id}`);
+
+    const [students, lecturers] = await Promise.all([
+      this.prisma.student.findMany({
+        where: { active: true },
+        select: { id: true },
+      }),
+      this.prisma.lecturer.findMany({ select: { id: true } }),
+    ]);
+
+    const title = "New Course Available";
+    const message = `A new course "${course.name}" has been added to the catalog. Check the course catalog to learn more.`;
+    const url = "/courses";
+
+    const studentNotifications = await this.prisma.$transaction(
+      students.map((student) =>
+        this.prisma.notification.create({
+          data: {
+            studentId: student.id,
+            type: NotificationType.INFO,
+            title,
+            message,
+            url,
+          },
+        }),
+      ),
+    );
+
+    const lecturerNotifications = await this.prisma.$transaction(
+      lecturers.map((lecturer) =>
+        this.prisma.notification.create({
+          data: {
+            lecturerId: lecturer.id,
+            type: NotificationType.INFO,
+            title,
+            message,
+            url,
+          },
+        }),
+      ),
+    );
+
+    const allNotifications = [
+      ...studentNotifications,
+      ...lecturerNotifications,
+    ];
+    for (const notification of allNotifications) {
+      this.webSocketGateway.sendNotificationToUser(notification);
+    }
+    await this.webhookService.triggerWebhooksForNotifications(allNotifications);
+    this.logger.log(
+      `Sent course created notifications to ${students.length} students and ${lecturers.length} lecturers`,
+    );
+  }
+
+  // ==================== Department Events ====================
+
+  @OnEvent("department.created")
+  async onDepartmentCreated(department: Department): Promise<void> {
+    this.logger.log(`Event: department.created - Department: ${department.id}`);
+
+    const [students, lecturers] = await Promise.all([
+      this.prisma.student.findMany({
+        where: { active: true },
+        select: { id: true },
+      }),
+      this.prisma.lecturer.findMany({ select: { id: true } }),
+    ]);
+
+    const title = "New Department Added";
+    const message = `A new department "${department.name}" (${department.departmentId}) has been added.`;
+    const url = "/courses";
+
+    const studentNotifications = await this.prisma.$transaction(
+      students.map((student) =>
+        this.prisma.notification.create({
+          data: {
+            studentId: student.id,
+            type: NotificationType.INFO,
+            title,
+            message,
+            url,
+          },
+        }),
+      ),
+    );
+
+    const lecturerNotifications = await this.prisma.$transaction(
+      lecturers.map((lecturer) =>
+        this.prisma.notification.create({
+          data: {
+            lecturerId: lecturer.id,
+            type: NotificationType.INFO,
+            title,
+            message,
+            url,
+          },
+        }),
+      ),
+    );
+
+    const allNotifications = [
+      ...studentNotifications,
+      ...lecturerNotifications,
+    ];
+    for (const notification of allNotifications) {
+      this.webSocketGateway.sendNotificationToUser(notification);
+    }
+    await this.webhookService.triggerWebhooksForNotifications(allNotifications);
+    this.logger.log(
+      `Sent department created notifications to ${students.length} students and ${lecturers.length} lecturers`,
+    );
+  }
+
   // ==================== Post Events ====================
 
-  @OnEvent('post.created')
+  @OnEvent("post.created")
   async onPostCreated(post: Post): Promise<void> {
     this.logger.log(
       `Event: post.created - Post: ${post.id}, Type: ${post.type}`,
@@ -740,7 +949,7 @@ export class NotificationSubscriber {
         : NotificationType.INFO;
 
     const postTypeLabel =
-      post.type === PostType.ANNOUNCEMENT ? 'Announcement' : 'News';
+      post.type === PostType.ANNOUNCEMENT ? "Announcement" : "News";
 
     // Get target users based on departmentId
     let students: Student[];
@@ -812,7 +1021,7 @@ export class NotificationSubscriber {
     );
   }
 
-  @OnEvent('post.updated')
+  @OnEvent("post.updated")
   async onPostUpdated(post: Post): Promise<void> {
     this.logger.log(
       `Event: post.updated - Post: ${post.id}, Type: ${post.type}`,
@@ -825,7 +1034,7 @@ export class NotificationSubscriber {
         : NotificationType.INFO;
 
     const postTypeLabel =
-      post.type === PostType.ANNOUNCEMENT ? 'Announcement' : 'News';
+      post.type === PostType.ANNOUNCEMENT ? "Announcement" : "News";
 
     // Get target users based on departmentId
     let students: Student[];
