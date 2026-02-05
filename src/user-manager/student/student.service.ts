@@ -4,12 +4,12 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma, Student } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { StudentUpdateAccountDto } from 'src/admin/dto/student.dto';
+} from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { Prisma, Student } from "@prisma/client";
+import * as bcrypt from "bcrypt";
+import { StudentUpdateAccountDto } from "src/admin/dto/student.dto";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class StudentService {
@@ -29,12 +29,12 @@ export class StudentService {
         where: { id },
       });
       if (!student) {
-        throw new NotFoundException('Account not found');
+        throw new NotFoundException("Account not found");
       }
       return student;
     } catch (error) {
-      this.logger.error('Failed to retrieve account', error.stack);
-      throw new NotFoundException('Account not found');
+      this.logger.error("Failed to retrieve account", error.stack);
+      throw new NotFoundException("Account not found");
     }
   }
 
@@ -46,19 +46,19 @@ export class StudentService {
     phone?: string,
   ): Promise<Student> {
     if (!email && !studentId && !username && !citizenId && !phone) {
-      throw new BadRequestException('At least one condition is required');
+      throw new BadRequestException("At least one condition is required");
     }
     try {
       const student = await this.prismaService.student.findUnique({
         where: { email, studentId, username, citizenId, phone },
       });
       if (!student) {
-        throw new NotFoundException('Account not found');
+        throw new NotFoundException("Account not found");
       }
       return student;
     } catch (error) {
-      this.logger.error('Failed to retrieve account', error.stack);
-      throw new NotFoundException('Account not found');
+      this.logger.error("Failed to retrieve account", error.stack);
+      throw new NotFoundException("Account not found");
     }
   }
 
@@ -68,8 +68,8 @@ export class StudentService {
         where: { departmentId },
       });
     } catch (error) {
-      this.logger.error('Failed to filter accounts', error.stack);
-      throw new BadRequestException('Failed to filter accounts');
+      this.logger.error("Failed to filter accounts", error.stack);
+      throw new BadRequestException("Failed to filter accounts");
     }
   }
 
@@ -79,12 +79,12 @@ export class StudentService {
         where: { username },
       });
       if (!student) {
-        throw new NotFoundException('Account not found');
+        throw new NotFoundException("Account not found");
       }
       return student;
     } catch (error) {
-      this.logger.error('Failed to retrieve account', error.stack);
-      throw new NotFoundException('Account not found');
+      this.logger.error("Failed to retrieve account", error.stack);
+      throw new NotFoundException("Account not found");
     }
   }
 
@@ -94,12 +94,12 @@ export class StudentService {
         where: { studentId },
       });
       if (!student) {
-        throw new NotFoundException('Account not found');
+        throw new NotFoundException("Account not found");
       }
       return student;
     } catch (error) {
-      this.logger.error('Failed to retrieve account', error.stack);
-      throw new NotFoundException('Account not found');
+      this.logger.error("Failed to retrieve account", error.stack);
+      throw new NotFoundException("Account not found");
     }
   }
 
@@ -110,35 +110,35 @@ export class StudentService {
       });
 
       // Emit event for student created
-      this.eventEmitter.emit('student.created', student);
+      this.eventEmitter.emit("student.created", student);
 
       return student;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           if (Array.isArray(error.meta?.target)) {
             if (
-              error.meta.target.includes('email') &&
-              error.meta.target.includes('username')
+              error.meta.target.includes("email") &&
+              error.meta.target.includes("username")
             ) {
               this.logger.warn(
                 `Email ${data.email} and Username ${data.username} already exist`,
               );
-              throw new ConflictException('Email and username already exist');
+              throw new ConflictException("Email and username already exist");
             }
-            if (error.meta.target.includes('email')) {
+            if (error.meta.target.includes("email")) {
               this.logger.warn(`Email ${data.email} already exists`);
-              throw new ConflictException('Email already exists');
+              throw new ConflictException("Email already exists");
             }
-            if (error.meta.target.includes('username')) {
+            if (error.meta.target.includes("username")) {
               this.logger.warn(`Username ${data.username} already exists`);
-              throw new ConflictException('Username already exists');
+              throw new ConflictException("Username already exists");
             }
           }
         }
       }
-      this.logger.error('Failed to create account', error.stack);
-      throw new BadRequestException('Failed to create account');
+      this.logger.error("Failed to create account", error.stack);
+      throw new BadRequestException("Failed to create account");
     }
   }
 
@@ -150,55 +150,72 @@ export class StudentService {
         data: data,
         skipDuplicates: true,
       });
-      return { message: 'Students created successfully' };
+      return { message: "Students created successfully" };
     } catch (error) {
-      this.logger.error('Failed to create students', error.stack);
-      throw new BadRequestException('Failed to create students');
+      this.logger.error("Failed to create students", error.stack);
+      throw new BadRequestException("Failed to create students");
     }
   }
 
   async update(id: string, data: Prisma.StudentUpdateInput): Promise<Student> {
     try {
+      const current = await this.prismaService.student.findUnique({
+        where: { id },
+      });
+      if (!current) {
+        throw new NotFoundException("Account not found");
+      }
+      const updateData = { ...data } as Record<string, unknown>;
+      if (updateData.email === current.email) delete updateData.email;
+      if (updateData.username === current.username) delete updateData.username;
+      if (updateData.studentId === current.studentId)
+        delete updateData.studentId;
+      if (updateData.citizenId === current.citizenId)
+        delete updateData.citizenId;
+      if (updateData.phone === current.phone) delete updateData.phone;
       return await this.prismaService.student.update({
         where: { id },
-        data,
+        data: updateData as Prisma.StudentUpdateInput,
       });
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
+        if (error.code === "P2025") {
           this.logger.warn(`Account with ID ${id} not found`);
-          throw new NotFoundException('Account not found');
+          throw new NotFoundException("Account not found");
         }
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           if (Array.isArray(error.meta?.target)) {
             if (
-              error.meta.target.includes('email') &&
-              error.meta.target.includes('username')
+              error.meta.target.includes("email") &&
+              error.meta.target.includes("username")
             ) {
               this.logger.warn(
                 `Email ${
-                  typeof data.email === 'string' ? data.email : ''
-                } and Username ${typeof data.username === 'string' ? data.username : ''} already exist`,
+                  typeof data.email === "string" ? data.email : ""
+                } and Username ${typeof data.username === "string" ? data.username : ""} already exist`,
               );
-              throw new ConflictException('Email and username already exist');
+              throw new ConflictException("Email and username already exist");
             }
-            if (error.meta.target.includes('email')) {
+            if (error.meta.target.includes("email")) {
               this.logger.warn(
-                `Email ${typeof data.email === 'string' ? data.email : ''} already exists`,
+                `Email ${typeof data.email === "string" ? data.email : ""} already exists`,
               );
-              throw new ConflictException('Email already exists');
+              throw new ConflictException("Email already exists");
             }
-            if (error.meta.target.includes('username')) {
+            if (error.meta.target.includes("username")) {
               this.logger.warn(
-                `Username ${typeof data.username === 'string' ? data.username : ''} already exists`,
+                `Username ${typeof data.username === "string" ? data.username : ""} already exists`,
               );
-              throw new ConflictException('Username already exists');
+              throw new ConflictException("Username already exists");
             }
           }
         }
       }
-      this.logger.error('Failed to update account', error.stack);
-      throw new BadRequestException('Failed to update account');
+      this.logger.error("Failed to update account", error.stack);
+      throw new BadRequestException("Failed to update account");
     }
   }
 
@@ -209,13 +226,13 @@ export class StudentService {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
+        if (error.code === "P2025") {
           this.logger.warn(`Account with ID ${id} not found`);
-          throw new NotFoundException('Account not found');
+          throw new NotFoundException("Account not found");
         }
       }
-      this.logger.error('Failed to delete account', error.stack);
-      throw new BadRequestException('Failed to delete account');
+      this.logger.error("Failed to delete account", error.stack);
+      throw new BadRequestException("Failed to delete account");
     }
   }
 
@@ -224,15 +241,15 @@ export class StudentService {
       await this.prismaService.student.deleteMany({
         where: { id: { in: ids } },
       });
-      return { message: 'Accounts deleted successfully' };
+      return { message: "Accounts deleted successfully" };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException('One or more accounts not found');
+        if (error.code === "P2025") {
+          throw new NotFoundException("One or more accounts not found");
         }
       }
-      this.logger.error('Failed to delete accounts', error.stack);
-      throw new BadRequestException('Failed to delete accounts');
+      this.logger.error("Failed to delete accounts", error.stack);
+      throw new BadRequestException("Failed to delete accounts");
     }
   }
 
@@ -245,7 +262,7 @@ export class StudentService {
           !oldPassword ||
           bcrypt.compareSync(oldPassword, student.password) === false
         ) {
-          throw new BadRequestException('Old password is incorrect');
+          throw new BadRequestException("Old password is incorrect");
         }
         const salt = await bcrypt.genSalt();
         hashedPassword = await bcrypt.hash(password, salt);
@@ -260,13 +277,13 @@ export class StudentService {
 
       // Emit event for password changed if password was updated
       if (hashedPassword) {
-        this.eventEmitter.emit('student.password_changed', updatedStudent);
+        this.eventEmitter.emit("student.password_changed", updatedStudent);
       }
 
       return updatedStudent;
     } catch (error) {
-      this.logger.error('Failed to update student account', error.stack);
-      throw new BadRequestException('Failed to update student account');
+      this.logger.error("Failed to update student account", error.stack);
+      throw new BadRequestException("Failed to update student account");
     }
   }
 }

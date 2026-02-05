@@ -18,6 +18,7 @@ import { CourseSemesterModule } from './semester/course-semester/course-semester
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PostModule } from './post/post.module';
+import { RequestModule } from './request/request.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { PostModule } from './post/post.module';
     GatewayModule,
     WebhookModule,
     CourseSemesterModule,
+    RequestModule,
     EventEmitterModule.forRoot({
       wildcard: true,
       delimiter: '.',
