@@ -3,10 +3,10 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+} from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class CourseSemesterService {
@@ -17,17 +17,55 @@ export class CourseSemesterService {
   async findAll(
     includeCourses = false,
     includeSemesters = false,
+    includeLecturer = false,
+    includeEnrollmentCount = false,
     courseId?: string,
     semesterId?: string,
   ) {
     return await this.prisma.courseOnSemester.findMany({
       include: {
-        course: includeCourses,
+        course: includeCourses
+          ? {
+              include: {
+                department: true,
+              },
+            }
+          : false,
         semester: includeSemesters,
+        lecturer: includeLecturer
+          ? {
+              select: {
+                id: true,
+                fullName: true,
+                lecturerId: true,
+                email: true,
+              },
+            }
+          : false,
+        _count: includeEnrollmentCount
+          ? {
+              select: {
+                enrollments: true,
+              },
+            }
+          : false,
       },
       where: {
         ...(courseId && { courseId }),
         ...(semesterId && { semesterId }),
+      },
+    });
+  }
+
+  async findByLecturerId(lecturerId: string) {
+    return await this.prisma.courseOnSemester.findMany({
+      where: { lecturerId },
+      include: {
+        course: {
+          include: { department: true },
+        },
+        semester: true,
+        _count: { select: { enrollments: true } },
       },
     });
   }
@@ -45,7 +83,7 @@ export class CourseSemesterService {
         throw new NotFoundException(`CourseSemester with ID ${id} not found`);
       }
       return courseOnSemester;
-    } catch (error) {
+    } catch {
       throw new NotFoundException(`CourseSemester with ID ${id} not found`);
     }
   }
@@ -56,12 +94,12 @@ export class CourseSemesterService {
         data,
       });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`Course or Semester not found`);
       }
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         throw new ConflictException(
-          'This course is already assigned to this semester',
+          "This course is already assigned to this semester",
         );
       }
       throw new BadRequestException(
@@ -78,14 +116,14 @@ export class CourseSemesterService {
         data: courseSemesters,
         skipDuplicates: true,
       });
-      return { message: 'CourseSemesters created successfully' };
+      return { message: "CourseSemesters created successfully" };
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`Course or Semester not found`);
       }
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         throw new ConflictException(
-          'One or more course-semester assignments already exist',
+          "One or more course-semester assignments already exist",
         );
       }
       throw new BadRequestException(
@@ -106,21 +144,21 @@ export class CourseSemesterService {
 
       // Emit event for course semester updated
       const courseName =
-        (updatedCourseSemester as any).course?.name || 'Unknown Course';
+        (updatedCourseSemester as any).course?.name || "Unknown Course";
       this.eventEmitter.emit(
-        'course_semester.updated',
+        "course_semester.updated",
         updatedCourseSemester,
         courseName,
       );
 
       return updatedCourseSemester;
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`CourseSemester with ID ${id} not found`);
       }
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         throw new ConflictException(
-          'This course is already assigned to this semester',
+          "This course is already assigned to this semester",
         );
       }
       throw new BadRequestException(
@@ -135,7 +173,7 @@ export class CourseSemesterService {
         where: { id },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`CourseSemester with ID ${id} not found`);
       }
       throw new BadRequestException(
@@ -150,7 +188,7 @@ export class CourseSemesterService {
         where: { courseId },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
           `No course-semester assignments found for courseId: ${courseId}`,
         );
@@ -167,7 +205,7 @@ export class CourseSemesterService {
         where: { semesterId },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
           `No course-semester assignments found for semesterId: ${semesterId}`,
         );
@@ -184,7 +222,7 @@ export class CourseSemesterService {
         where: { id: { in: ids } },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`No course-semester assignments found`);
       }
       throw new BadRequestException(
