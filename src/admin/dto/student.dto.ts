@@ -1,4 +1,5 @@
-import { Transform, Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform, Type } from "class-transformer";
 import {
   IsBoolean,
   IsDateString,
@@ -9,47 +10,46 @@ import {
   IsString,
   ValidateIf,
   ValidateNested,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+} from "class-validator";
 
 export class CreateStudentDto {
   @ApiProperty({
-    description: 'Department ID the student belongs to',
-    example: 'dept-001',
+    description: "Department ID the student belongs to",
+    example: "dept-001",
   })
   @IsString()
   @IsNotEmpty()
   departmentId: string;
 
   @ApiProperty({
-    description: 'Student email address',
-    example: 'student@university.edu',
+    description: "Student email address",
+    example: "student@university.edu",
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
   @ApiProperty({
-    description: 'Student username for login',
-    example: 'john_doe',
+    description: "Student username for login",
+    example: "john_doe",
   })
   @IsString()
   @IsNotEmpty()
   username: string;
 
-  @ApiProperty({ description: 'Student password', example: 'SecurePass123!' })
+  @ApiProperty({ description: "Student password", example: "SecurePass123!" })
   @IsString()
   @IsNotEmpty()
   password: string;
 
-  @ApiProperty({ description: 'Unique student ID', example: 'STU-2026-001' })
+  @ApiProperty({ description: "Unique student ID", example: "STU-2026-001" })
   @IsString()
   @IsNotEmpty()
   studentId: string;
 
   @ApiPropertyOptional({
-    description: 'Full name of the student',
-    example: 'John Doe',
+    description: "Full name of the student",
+    example: "John Doe",
   })
   @IsString()
   @IsOptional()
@@ -57,7 +57,7 @@ export class CreateStudentDto {
   fullName: string;
 
   @ApiPropertyOptional({
-    description: 'Gender of the student (true = male, false = female)',
+    description: "Gender of the student (true = male, false = female)",
     example: true,
   })
   @IsBoolean()
@@ -66,8 +66,8 @@ export class CreateStudentDto {
   gender: boolean;
 
   @ApiPropertyOptional({
-    description: 'Birth date in ISO format',
-    example: '2000-01-15',
+    description: "Birth date in ISO format",
+    example: "2000-01-15",
   })
   @IsDateString()
   @Transform(({ value }) => new Date(value).toISOString())
@@ -76,8 +76,8 @@ export class CreateStudentDto {
   birthDate: string;
 
   @ApiPropertyOptional({
-    description: 'Citizen ID number',
-    example: '123456789012',
+    description: "Citizen ID number",
+    example: "123456789012",
   })
   @IsString()
   @IsOptional()
@@ -85,17 +85,17 @@ export class CreateStudentDto {
   citizenId: string;
 
   @ApiPropertyOptional({
-    description: 'Phone number (Vietnam format)',
-    example: '0901234567',
+    description: "Phone number (Vietnam format)",
+    example: "0901234567",
   })
-  @IsPhoneNumber('VN')
+  @IsPhoneNumber("VN")
   @IsOptional()
   @IsNotEmpty()
   phone: string;
 
   @ApiPropertyOptional({
-    description: 'Home address',
-    example: '123 Main Street, District 1, Ho Chi Minh City',
+    description: "Home address",
+    example: "123 Main Street, District 1, Ho Chi Minh City",
   })
   @IsString()
   @IsOptional()
@@ -105,7 +105,7 @@ export class CreateStudentDto {
 
 export class CreateMultipleStudentsDto {
   @ApiProperty({
-    description: 'Array of students to create',
+    description: "Array of students to create",
     type: [CreateStudentDto],
   })
   @ValidateNested({ each: true })
@@ -115,8 +115,8 @@ export class CreateMultipleStudentsDto {
 
 export class UpdateStudentDto {
   @ApiPropertyOptional({
-    description: 'Department ID the student belongs to',
-    example: 'dept-001',
+    description: "Department ID the student belongs to",
+    example: "dept-001",
   })
   @IsString()
   @IsOptional()
@@ -124,8 +124,8 @@ export class UpdateStudentDto {
   departmentId: string;
 
   @ApiPropertyOptional({
-    description: 'Student email address',
-    example: 'student@university.edu',
+    description: "Student email address",
+    example: "student@university.edu",
   })
   @IsEmail()
   @IsOptional()
@@ -133,8 +133,8 @@ export class UpdateStudentDto {
   email: string;
 
   @ApiPropertyOptional({
-    description: 'Student username for login',
-    example: 'john_doe',
+    description: "Student username for login",
+    example: "john_doe",
   })
   @IsString()
   @IsOptional()
@@ -142,8 +142,8 @@ export class UpdateStudentDto {
   username: string;
 
   @ApiPropertyOptional({
-    description: 'New password for the student',
-    example: 'NewSecurePass123!',
+    description: "New password for the student",
+    example: "NewSecurePass123!",
   })
   @IsString()
   @IsOptional()
@@ -152,8 +152,8 @@ export class UpdateStudentDto {
   newPassword: string;
 
   @ApiPropertyOptional({
-    description: 'Confirm new password',
-    example: 'NewSecurePass123!',
+    description: "Confirm new password",
+    example: "NewSecurePass123!",
   })
   @IsString()
   @IsOptional()
@@ -162,8 +162,8 @@ export class UpdateStudentDto {
   confirmPassword: string;
 
   @ApiPropertyOptional({
-    description: 'Unique student ID',
-    example: 'STU-2026-001',
+    description: "Unique student ID",
+    example: "STU-2026-001",
   })
   @IsString()
   @IsOptional()
@@ -171,8 +171,8 @@ export class UpdateStudentDto {
   studentId: string;
 
   @ApiPropertyOptional({
-    description: 'Full name of the student',
-    example: 'John Doe',
+    description: "Full name of the student",
+    example: "John Doe",
   })
   @IsString()
   @IsOptional()
@@ -180,7 +180,7 @@ export class UpdateStudentDto {
   fullName: string;
 
   @ApiPropertyOptional({
-    description: 'Gender of the student (true = male, false = female)',
+    description: "Gender of the student (true = male, false = female)",
     example: true,
   })
   @IsBoolean()
@@ -189,8 +189,8 @@ export class UpdateStudentDto {
   gender: boolean;
 
   @ApiPropertyOptional({
-    description: 'Birth date in ISO format',
-    example: '2000-01-15',
+    description: "Birth date in ISO format",
+    example: "2000-01-15",
   })
   @IsDateString()
   @Transform(({ value }) => new Date(value).toISOString())
@@ -199,8 +199,8 @@ export class UpdateStudentDto {
   birthDate: string;
 
   @ApiPropertyOptional({
-    description: 'Citizen ID number',
-    example: '123456789012',
+    description: "Citizen ID number",
+    example: "123456789012",
   })
   @IsString()
   @IsOptional()
@@ -208,17 +208,17 @@ export class UpdateStudentDto {
   citizenId: string;
 
   @ApiPropertyOptional({
-    description: 'Phone number (Vietnam format)',
-    example: '0901234567',
+    description: "Phone number (Vietnam format)",
+    example: "0901234567",
   })
-  @IsPhoneNumber('VN')
+  @IsPhoneNumber("VN")
   @IsOptional()
   @IsNotEmpty()
   phone: string;
 
   @ApiPropertyOptional({
-    description: 'Home address',
-    example: '123 Main Street, District 1, Ho Chi Minh City',
+    description: "Home address",
+    example: "123 Main Street, District 1, Ho Chi Minh City",
   })
   @IsString()
   @IsOptional()
@@ -226,7 +226,7 @@ export class UpdateStudentDto {
   address: string;
 
   @ApiPropertyOptional({
-    description: 'Whether the student account is active',
+    description: "Whether the student account is active",
     example: true,
   })
   @IsBoolean()
@@ -237,8 +237,8 @@ export class UpdateStudentDto {
 
 export class StudentUpdateAccountDto {
   @ApiPropertyOptional({
-    description: 'Student username for login',
-    example: 'john_doe',
+    description: "Student username for login",
+    example: "john_doe",
   })
   @IsString()
   @IsOptional()
@@ -246,8 +246,8 @@ export class StudentUpdateAccountDto {
   username: string;
 
   @ApiPropertyOptional({
-    description: 'Full name of the student',
-    example: 'John Doe',
+    description: "Full name of the student",
+    example: "John Doe",
   })
   @IsString()
   @IsOptional()
@@ -255,7 +255,7 @@ export class StudentUpdateAccountDto {
   fullName: string;
 
   @ApiPropertyOptional({
-    description: 'Gender of the student (true = male, false = female)',
+    description: "Gender of the student (true = male, false = female)",
     example: true,
   })
   @IsBoolean()
@@ -264,8 +264,8 @@ export class StudentUpdateAccountDto {
   gender: boolean;
 
   @ApiPropertyOptional({
-    description: 'Birth date in ISO format',
-    example: '2000-01-15',
+    description: "Birth date in ISO format",
+    example: "2000-01-15",
   })
   @IsDateString()
   @Transform(({ value }) => new Date(value).toISOString())
@@ -274,8 +274,8 @@ export class StudentUpdateAccountDto {
   birthDate: string;
 
   @ApiPropertyOptional({
-    description: 'Citizen ID number',
-    example: '123456789012',
+    description: "Citizen ID number",
+    example: "123456789012",
   })
   @IsString()
   @IsOptional()
@@ -283,17 +283,17 @@ export class StudentUpdateAccountDto {
   citizenId: string;
 
   @ApiPropertyOptional({
-    description: 'Phone number (Vietnam format)',
-    example: '0901234567',
+    description: "Phone number (Vietnam format)",
+    example: "0901234567",
   })
-  @IsPhoneNumber('VN')
+  @IsPhoneNumber("VN")
   @IsOptional()
   @IsNotEmpty()
   phone: string;
 
   @ApiPropertyOptional({
-    description: 'Home address',
-    example: '123 Main Street, District 1, Ho Chi Minh City',
+    description: "Home address",
+    example: "123 Main Street, District 1, Ho Chi Minh City",
   })
   @IsString()
   @IsOptional()
@@ -301,8 +301,8 @@ export class StudentUpdateAccountDto {
   address: string;
 
   @ApiPropertyOptional({
-    description: 'Current password for verification',
-    example: 'OldPass123!',
+    description: "Current password for verification",
+    example: "OldPass123!",
   })
   @IsString()
   @IsOptional()
@@ -310,8 +310,8 @@ export class StudentUpdateAccountDto {
   oldPassword: string;
 
   @ApiPropertyOptional({
-    description: 'New password',
-    example: 'NewSecurePass123!',
+    description: "New password",
+    example: "NewSecurePass123!",
   })
   @IsString()
   @IsOptional()
