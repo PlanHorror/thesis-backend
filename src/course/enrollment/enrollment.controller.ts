@@ -44,11 +44,11 @@ export class EnrollmentController {
   })
   async getMyEnrollments(@GetUser() student: Student) {
     return this.enrollmentService.findAll(
-      false,
-      false,
-      false,
-      false,
-      false,
+      false, // includeStudent - not needed for own enrollments
+      true, // includeCourseOnSemester - needed for course info
+      true, // includeCourse - needed for course name, credits
+      true, // includeSemester - needed for semester name
+      true, // includeLecturer - needed for lecturer info
       student.id,
     );
   }

@@ -1,13 +1,12 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { EnrollmentSession, Prisma } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+} from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { EnrollmentSession, Prisma } from "@prisma/client";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class SessionService {
@@ -37,12 +36,12 @@ export class SessionService {
         },
       });
       if (!session) {
-        throw new NotFoundException('Enrollment session not found');
+        throw new NotFoundException("Enrollment session not found");
       }
       return session;
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment session', error.stack);
-      throw new NotFoundException('Enrollment session not found');
+      this.logger.error("Failed to retrieve enrollment session", error.stack);
+      throw new NotFoundException("Enrollment session not found");
     }
   }
 
@@ -58,8 +57,8 @@ export class SessionService {
         },
       });
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment sessions', error.stack);
-      throw new NotFoundException('Enrollment sessions not found');
+      this.logger.error("Failed to retrieve enrollment sessions", error.stack);
+      throw new NotFoundException("Enrollment sessions not found");
     }
   }
 
@@ -72,7 +71,16 @@ export class SessionService {
         include: { semester: true },
       });
 
-      // Emit event if session is active and within time range
+      const semesterName = session.semester?.name || "Unknown Semester";
+
+      // Notify all students that a new enrollment session was created (admin action)
+      this.eventEmitter.emit(
+        "enrollment_session.created",
+        session,
+        semesterName,
+      );
+
+      // If session is already active and within time range, also emit opened
       const now = new Date();
       if (
         session.isActive &&
@@ -80,19 +88,19 @@ export class SessionService {
         session.endDate >= now
       ) {
         this.eventEmitter.emit(
-          'enrollment_session.opened',
+          "enrollment_session.opened",
           session,
-          session.semester?.name || 'Unknown Semester',
+          semesterName,
         );
       }
 
       return session;
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Semester not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Semester not found");
       }
-      this.logger.error('Failed to create enrollment session', error);
-      throw new BadRequestException('Failed to create enrollment session');
+      this.logger.error("Failed to create enrollment session", error);
+      throw new BadRequestException("Failed to create enrollment session");
     }
   }
 
@@ -104,10 +112,10 @@ export class SessionService {
         data: sessions,
         skipDuplicates: true,
       });
-      return { message: 'Enrollment sessions created successfully' };
+      return { message: "Enrollment sessions created successfully" };
     } catch (error) {
-      this.logger.error('Failed to create enrollment sessions', error.stack);
-      throw new BadRequestException('Failed to create enrollment sessions');
+      this.logger.error("Failed to create enrollment sessions", error.stack);
+      throw new BadRequestException("Failed to create enrollment sessions");
     }
   }
 
@@ -121,11 +129,11 @@ export class SessionService {
         data,
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Enrollment session not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Enrollment session not found");
       }
-      this.logger.error('Failed to update enrollment session', error);
-      throw new BadRequestException('Failed to update enrollment session');
+      this.logger.error("Failed to update enrollment session", error);
+      throw new BadRequestException("Failed to update enrollment session");
     }
   }
 
@@ -135,11 +143,11 @@ export class SessionService {
         where: { id },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Enrollment session not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Enrollment session not found");
       }
-      this.logger.error('Failed to delete enrollment session', error);
-      throw new BadRequestException('Failed to delete enrollment session');
+      this.logger.error("Failed to delete enrollment session", error);
+      throw new BadRequestException("Failed to delete enrollment session");
     }
   }
 
@@ -150,13 +158,13 @@ export class SessionService {
       });
       return result;
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
-          'One or more enrollment sessions not found',
+          "One or more enrollment sessions not found",
         );
       }
-      this.logger.error('Failed to delete enrollment sessions', error);
-      throw new BadRequestException('Failed to delete enrollment sessions');
+      this.logger.error("Failed to delete enrollment sessions", error);
+      throw new BadRequestException("Failed to delete enrollment sessions");
     }
   }
 
@@ -182,15 +190,15 @@ export class SessionService {
         },
       });
       if (!session) {
-        throw new NotFoundException('Enrollment session not found');
+        throw new NotFoundException("Enrollment session not found");
       }
       if (!session.isActive) {
-        throw new NotFoundException('Enrollment session not found');
+        throw new NotFoundException("Enrollment session not found");
       }
       return session;
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment session', error.stack);
-      throw new NotFoundException('Enrollment session not found');
+      this.logger.error("Failed to retrieve enrollment session", error.stack);
+      throw new NotFoundException("Enrollment session not found");
     }
   }
 
@@ -206,8 +214,8 @@ export class SessionService {
         },
       });
     } catch (error) {
-      this.logger.error('Failed to retrieve enrollment sessions', error.stack);
-      throw new NotFoundException('Enrollment sessions not found');
+      this.logger.error("Failed to retrieve enrollment sessions", error.stack);
+      throw new NotFoundException("Enrollment sessions not found");
     }
   }
 
@@ -232,7 +240,7 @@ export class SessionService {
       return validSession !== null;
     } catch (error) {
       this.logger.error(
-        'Failed to check enrollment time validity',
+        "Failed to check enrollment time validity",
         error.stack,
       );
       return false;
