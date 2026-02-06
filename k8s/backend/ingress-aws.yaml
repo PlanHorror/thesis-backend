@@ -7,30 +7,23 @@ metadata:
     app: backend
   annotations:
     # AWS ALB Ingress Controller
-    kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/healthcheck-path: /api
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+
+    # WebSocket & Sticky Sessions for Socket.IO
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
+
     # Uncomment for HTTPS (requires ACM certificate ARN)
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT-ID
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:ACCOUNT:certificate/CERT-ID
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
 spec:
   ingressClassName: alb
   rules:
-    # For production, replace with your actual domain
-    - host: api.yourdomain.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 80
-    # Also allow access without host (direct ALB URL)
+    # Allow access via ALB URL directly
     - http:
         paths:
           - path: /

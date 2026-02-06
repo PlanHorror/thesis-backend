@@ -6,13 +6,18 @@ metadata:
   labels:
     app: backend
   annotations:
-    # For Minikube nginx ingress controller
-    nginx.ingress.kubernetes.io/proxy-body-size: '50m' # Allow file uploads
-    nginx.ingress.kubernetes.io/proxy-read-timeout: '60'
-    nginx.ingress.kubernetes.io/proxy-send-timeout: '60'
-    # Enable WebSocket support for Socket.io
+    # File uploads
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
+
+    # WebSocket support
     nginx.ingress.kubernetes.io/proxy-http-version: '1.1'
-    nginx.ingress.kubernetes.io/upstream-hash-by: '$remote_addr'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '3600' # 1 hour timeout
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
+
+    # Sticky sessions via cookie (better than IP-based)
+    nginx.ingress.kubernetes.io/affinity: 'cookie'
+    nginx.ingress.kubernetes.io/session-cookie-name: 'SERVERID'
+    nginx.ingress.kubernetes.io/session-cookie-max-age: '3600'
 spec:
   ingressClassName: nginx
   rules:
