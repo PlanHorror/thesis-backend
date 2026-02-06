@@ -87,15 +87,15 @@ sed "s|image: thesis-backend:latest|image: $IMAGE_URI|g; s|imagePullPolicy: Neve
 echo "📦 Creating namespace..."
 kubectl apply -f "$SCRIPT_DIR/namespace.yaml"
 
-# Install NGINX Ingress Controller if not exists
-echo "🌐 Checking NGINX Ingress Controller..."
-if ! kubectl get namespace ingress-nginx >/dev/null 2>&1; then
-    echo "📦 Installing NGINX Ingress Controller..."
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/aws/deploy.yaml
-    echo "⏳ Waiting for Ingress Controller to be ready..."
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller -n ingress-nginx --timeout=120s
+# Note: Using AWS ALB Ingress Controller (must be installed separately)
+# See: helm install aws-load-balancer-controller eks/aws-load-balancer-controller
+echo "🌐 Checking AWS Load Balancer Controller..."
+if kubectl get deployment aws-load-balancer-controller -n kube-system >/dev/null 2>&1; then
+    echo "✅ AWS Load Balancer Controller already installed"
 else
-    echo "✅ NGINX Ingress Controller already installed"
+    echo "⚠️  AWS Load Balancer Controller not found in kube-system."
+    echo "   Install it first: https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html"
+    exit 1
 fi
 
 echo "🔐 Applying secrets..."
@@ -119,7 +119,7 @@ kubectl wait --for=condition=ready pod -l app=postgres -n $NAMESPACE --timeout=1
 echo "🚀 Deploying Backend..."
 kubectl apply -f "$TEMP_DEPLOY"
 kubectl apply -f "$SCRIPT_DIR/backend/service.yaml"
-kubectl apply -f "$SCRIPT_DIR/backend/ingress.yaml"
+kubectl apply -f "$SCRIPT_DIR/backend/ingress-aws.yaml"
 
 echo "⏳ Waiting for Backend to be ready..."
 kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=180s
@@ -127,10 +127,21 @@ kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=18
 # Clean up temp file
 rm -f "$TEMP_DEPLOY"
 
-# Get NGINX Ingress Controller Load Balancer URL
-echo "⏳ Waiting for Load Balancer to be ready..."
-sleep 15
-LB_HOSTNAME=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
+# Get ALB URL
+echo "⏳ Waiting for ALB to be ready..."
+sleep 10
+for i in $(seq 1 12); do
+    ALB_HOSTNAME=$(kubectl get ingress app-ingress -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+    if [ -n "$ALB_HOSTNAME" ] && [ "$ALB_HOSTNAME" != "" ]; then
+        break
+    fi
+    echo "   Waiting for ALB... ($i/12)"
+    sleep 10
+done
+
+if [ -z "$ALB_HOSTNAME" ]; then
+    ALB_HOSTNAME="(pending - check: kubectl get ingress app-ingress -n $NAMESPACE)"
+fi
 
 echo ""
 echo "======================================"
@@ -140,16 +151,17 @@ echo ""
 echo "🖼️  Image pushed to:"
 echo "   $IMAGE_URI"
 echo ""
-echo "🌐 Access your API at:"
-echo "   http://$LB_HOSTNAME/api"
+echo "🌐 Access your app at:"
+echo "   API:      http://$ALB_HOSTNAME/api"
+echo "   Frontend: http://$ALB_HOSTNAME/"
 echo ""
 echo "📝 If using custom domain, create CNAME record:"
-echo "   api.yourdomain.com → $LB_HOSTNAME"
+echo "   yourdomain.com → $ALB_HOSTNAME"
 echo ""
 echo "📊 Check status:"
 echo "   kubectl get pods -n $NAMESPACE"
 echo "   kubectl get svc -n $NAMESPACE"
-echo "   kubectl get svc -n ingress-nginx"
+echo "   kubectl get ingress -n $NAMESPACE"
 echo ""
 echo "📜 View logs:"
 echo "   kubectl logs -f -l app=backend -n $NAMESPACE"
