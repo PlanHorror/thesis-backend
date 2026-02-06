@@ -60,4 +60,5 @@ spec:
               mountPath: /app/attachments
       volumes:
         - name: attachments
-          emptyDir: {} # For file uploads - use PVC for persistence in production
+          persistentVolumeClaim:
+            claimName: attachments-pvc

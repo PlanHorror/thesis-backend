@@ -143,3 +143,5 @@ vite.config.ts.timestamp-*
 # Kubernetes secrets (keep example files)
 k8s/**/secret.yaml
 !k8s/**/secret.example.yaml
+
+temp/

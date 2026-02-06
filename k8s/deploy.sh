@@ -57,8 +57,9 @@ kubectl apply -f "$SCRIPT_DIR/backend/secret.yaml"
 echo "⚙️  Applying configs..."
 kubectl apply -f "$SCRIPT_DIR/backend/configmap.yaml"
 
-echo "💾 Creating persistent volume claim..."
+echo "💾 Creating persistent volume claims..."
 kubectl apply -f "$SCRIPT_DIR/postgres/pvc.yaml"
+kubectl apply -f "$SCRIPT_DIR/backend/attachments-pvc.yaml"
 
 echo "🐘 Deploying PostgreSQL..."
 kubectl apply -f "$SCRIPT_DIR/postgres/deployment.yaml"
@@ -72,8 +73,12 @@ kubectl apply -f "$SCRIPT_DIR/backend/deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/backend/service.yaml"
 kubectl apply -f "$SCRIPT_DIR/backend/ingress.yaml"
 
+# Force pods to restart and pick up the new image
+echo "🔄 Restarting backend pods to pick up new image..."
+kubectl rollout restart deployment/backend -n $NAMESPACE
+
 echo "⏳ Waiting for Backend to be ready..."
-kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=120s
+kubectl rollout status deployment/backend -n $NAMESPACE --timeout=120s
 
 # Get Minikube IP
 MINIKUBE_IP=$(minikube ip)

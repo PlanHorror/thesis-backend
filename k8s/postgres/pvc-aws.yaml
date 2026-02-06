@@ -8,8 +8,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: gp2 # AWS EKS storage class
   resources:
     requests:
       storage: 5Gi
-  # Minikube: uses default StorageClass
-  # AWS EKS: uses gp2 (set in pvc-aws.yaml)

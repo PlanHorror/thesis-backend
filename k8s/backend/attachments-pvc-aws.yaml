@@ -1,15 +1,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: postgres-pvc
+  name: attachments-pvc
   namespace: thesis
   labels:
-    app: postgres
+    app: backend
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: gp2 # AWS EKS storage class
   resources:
     requests:
       storage: 5Gi
-  # Minikube: uses default StorageClass
-  # AWS EKS: uses gp2 (set in pvc-aws.yaml)
