@@ -16,10 +16,20 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    # For local development, add this to /etc/hosts:
+    # For local development (Minikube), add to /etc/hosts:
     # <minikube-ip> api.thesis.local
     - host: api.thesis.local
       http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
+    # Allow access without host header (for AWS LB URL direct access)
+    - http:
         paths:
           - path: /
             pathType: Prefix

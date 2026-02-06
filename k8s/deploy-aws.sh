@@ -7,7 +7,7 @@
 set -e
 
 # Configuration - UPDATE THESE VALUES
-AWS_REGION="${AWS_REGION:-us-east-1}"
+AWS_REGION="${AWS_REGION:-ap-southeast-2}"
 AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-}"
 ECR_REPO_NAME="thesis-backend"
 EKS_CLUSTER_NAME="${EKS_CLUSTER_NAME:-thesis-cluster}"
@@ -87,6 +87,17 @@ sed "s|image: thesis-backend:latest|image: $IMAGE_URI|g; s|imagePullPolicy: Neve
 echo "📦 Creating namespace..."
 kubectl apply -f "$SCRIPT_DIR/namespace.yaml"
 
+# Install NGINX Ingress Controller if not exists
+echo "🌐 Checking NGINX Ingress Controller..."
+if ! kubectl get namespace ingress-nginx >/dev/null 2>&1; then
+    echo "📦 Installing NGINX Ingress Controller..."
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/aws/deploy.yaml
+    echo "⏳ Waiting for Ingress Controller to be ready..."
+    kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller -n ingress-nginx --timeout=120s
+else
+    echo "✅ NGINX Ingress Controller already installed"
+fi
+
 echo "🔐 Applying secrets..."
 kubectl apply -f "$SCRIPT_DIR/postgres/secret.yaml"
 kubectl apply -f "$SCRIPT_DIR/backend/secret.yaml"
@@ -94,8 +105,9 @@ kubectl apply -f "$SCRIPT_DIR/backend/secret.yaml"
 echo "⚙️  Applying configs..."
 kubectl apply -f "$SCRIPT_DIR/backend/configmap.yaml"
 
-echo "💾 Creating persistent volume claim..."
-kubectl apply -f "$SCRIPT_DIR/postgres/pvc.yaml"
+echo "💾 Creating persistent volume claims..."
+kubectl apply -f "$SCRIPT_DIR/postgres/pvc-aws.yaml"
+kubectl apply -f "$SCRIPT_DIR/backend/attachments-pvc-aws.yaml"
 
 echo "🐘 Deploying PostgreSQL..."
 kubectl apply -f "$SCRIPT_DIR/postgres/deployment.yaml"
@@ -107,7 +119,7 @@ kubectl wait --for=condition=ready pod -l app=postgres -n $NAMESPACE --timeout=1
 echo "🚀 Deploying Backend..."
 kubectl apply -f "$TEMP_DEPLOY"
 kubectl apply -f "$SCRIPT_DIR/backend/service.yaml"
-kubectl apply -f "$SCRIPT_DIR/backend/ingress-aws.yaml"
+kubectl apply -f "$SCRIPT_DIR/backend/ingress.yaml"
 
 echo "⏳ Waiting for Backend to be ready..."
 kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=180s
@@ -115,10 +127,10 @@ kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=18
 # Clean up temp file
 rm -f "$TEMP_DEPLOY"
 
-# Get Ingress address
-echo "⏳ Waiting for Ingress to get external address..."
-sleep 10
-INGRESS_ADDRESS=$(kubectl get ingress backend-ingress -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
+# Get NGINX Ingress Controller Load Balancer URL
+echo "⏳ Waiting for Load Balancer to be ready..."
+sleep 15
+LB_HOSTNAME=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "pending")
 
 echo ""
 echo "======================================"
@@ -128,16 +140,16 @@ echo ""
 echo "🖼️  Image pushed to:"
 echo "   $IMAGE_URI"
 echo ""
-echo "🌐 Ingress Address:"
-echo "   $INGRESS_ADDRESS"
+echo "🌐 Access your API at:"
+echo "   http://$LB_HOSTNAME/api"
 echo ""
 echo "📝 If using custom domain, create CNAME record:"
-echo "   api.yourdomain.com → $INGRESS_ADDRESS"
+echo "   api.yourdomain.com → $LB_HOSTNAME"
 echo ""
 echo "📊 Check status:"
 echo "   kubectl get pods -n $NAMESPACE"
 echo "   kubectl get svc -n $NAMESPACE"
-echo "   kubectl get ingress -n $NAMESPACE"
+echo "   kubectl get svc -n ingress-nginx"
 echo ""
 echo "📜 View logs:"
 echo "   kubectl logs -f -l app=backend -n $NAMESPACE"
