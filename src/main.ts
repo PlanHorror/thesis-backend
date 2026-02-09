@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import "dotenv/config";
 import { AppModule } from "./app.module";
+import { SpelunkerModule } from "nestjs-spelunker/dist/spelunker.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -80,7 +81,14 @@ async function bootstrap() {
   Logger.log(
     `Swagger documentation available at: http://localhost:${process.env.PORT ?? 8080}/api/docs`,
   );
-
+  const tree = SpelunkerModule.explore(app);
+  const root = SpelunkerModule.graph(tree);
+  const edges = SpelunkerModule.findGraphEdges(root);
+  console.log('graph LR');
+  const mermaidEdges = edges.map(
+    ({ from, to }) => `  ${from.module.name}-->${to.module.name}`,
+  );
+  console.log(mermaidEdges.join('\n'));
   await app.listen(process.env.PORT ?? 8080);
 }
 void bootstrap();

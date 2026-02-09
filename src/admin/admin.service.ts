@@ -4,69 +4,69 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
-import { Admin, Department, Lecturer, Prisma, Student } from "@prisma/client";
-import * as bcrypt from "bcrypt";
-import { CourseService } from "src/course/course.service";
-import { DocumentService } from "src/course/document/document.service";
-import { EnrollmentService } from "src/course/enrollment/enrollment.service";
-import { SessionService } from "src/course/enrollment/session/session.service";
-import { DepartmentService } from "src/department/department.service";
-import { ExamScheduleService } from "src/exam-schedule/exam-schedule.service";
-import { NotificationService } from "src/notification/notification.service";
-import { PostService } from "src/post/post.service";
-import { PrismaService } from "src/prisma/prisma.service";
-import { CourseSemesterService } from "src/semester/course-semester/course-semester.service";
-import { SemesterService } from "src/semester/semester.service";
-import { LecturerService } from "src/user-manager/lecturer/lecturer.service";
-import { StudentService } from "src/user-manager/student/student.service";
-import { WebhookService } from "src/webhook/webhook.service";
+} from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Admin, Department, Lecturer, Prisma, Student } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { CourseService } from 'src/course/course.service';
+import { DocumentService } from 'src/course/document/document.service';
+import { EnrollmentService } from 'src/course/enrollment/enrollment.service';
+import { SessionService } from 'src/course/enrollment/session/session.service';
+import { DepartmentService } from 'src/department/department.service';
+import { ExamScheduleService } from 'src/exam-schedule/exam-schedule.service';
+import { NotificationService } from 'src/notification/notification.service';
+import { PostService } from 'src/post/post.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CourseSemesterService } from 'src/semester/course-semester/course-semester.service';
+import { SemesterService } from 'src/semester/semester.service';
+import { LecturerService } from 'src/user-manager/lecturer/lecturer.service';
+import { StudentService } from 'src/user-manager/student/student.service';
+import { WebhookService } from 'src/webhook/webhook.service';
 import {
   CreateCourseEnrollmentDto,
   UpdateCourseEnrollmentDto,
-} from "./dto/course-enrollment.dto";
+} from './dto/course-enrollment.dto';
 import {
   CreateCourseDto,
   CreateMultipleCoursesDto,
   UpdateCourseDto,
-} from "./dto/course.dto";
+} from './dto/course.dto';
 import {
   CreateDepartmentDto,
   CreateMultipleDepartmentsDto,
   UpdateDepartmentDto,
-} from "./dto/department.dto";
+} from './dto/department.dto';
 import {
   CreateEnrollmentSessionDto,
   CreateMultipleEnrollmentSessionsDto,
   UpdateEnrollmentSessionDto,
-} from "./dto/enrollment-session.dto";
+} from './dto/enrollment-session.dto';
 import {
   CreateExamScheduleDto,
   CreateMultipleExamSchedulesDto,
   UpdateExamScheduleDto,
-} from "./dto/exam-schedule.dto";
+} from './dto/exam-schedule.dto';
 import {
   CreateLecturerDto,
   CreateMultipleLecturersDto,
   UpdateLecturerDto,
-} from "./dto/lecturer.dto";
+} from './dto/lecturer.dto';
 import {
   CreateNotificationDto,
   UpdateNotificationDto,
-} from "./dto/notification.dto";
-import { CreatePostDto, UpdatePostDto } from "./dto/post.dto";
+} from './dto/notification.dto';
+import { CreatePostDto, UpdatePostDto } from './dto/post.dto';
 import {
   CourseOnSemesterDto,
   CreateSemesterDto,
   UpdateSemesterDto,
-} from "./dto/semester.dto";
+} from './dto/semester.dto';
 import {
   CreateMultipleStudentsDto,
   CreateStudentDto,
   UpdateStudentDto,
-} from "./dto/student.dto";
-import { CreateWebhookDto, UpdateWebhookDto } from "./dto/webhook.dto";
+} from './dto/student.dto';
+import { CreateWebhookDto, UpdateWebhookDto } from './dto/webhook.dto';
 
 @Injectable()
 export class AdminService {
@@ -99,12 +99,12 @@ export class AdminService {
         where: { id },
       });
       if (!admin) {
-        throw new NotFoundException("Admin not found");
+        throw new NotFoundException('Admin not found');
       }
       return admin;
     } catch (error) {
-      this.logger.error("Failed to retrieve admin", error.stack);
-      throw new NotFoundException("Admin not found");
+      this.logger.error('Failed to retrieve admin', error.stack);
+      throw new NotFoundException('Admin not found');
     }
   }
 
@@ -114,12 +114,12 @@ export class AdminService {
         where: { username },
       });
       if (!admin) {
-        throw new NotFoundException("Admin not found");
+        throw new NotFoundException('Admin not found');
       }
       return admin;
     } catch (error) {
-      this.logger.error("Failed to retrieve admin", error.stack);
-      throw new NotFoundException("Admin not found");
+      this.logger.error('Failed to retrieve admin', error.stack);
+      throw new NotFoundException('Admin not found');
     }
   }
 
@@ -128,13 +128,13 @@ export class AdminService {
       return await this.prisma.admin.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2002") {
+        if (error.code === 'P2002') {
           this.logger.warn(`Username ${data.username} already exists`);
-          throw new ConflictException("Username already exists");
+          throw new ConflictException('Username already exists');
         }
       }
-      this.logger.error("Failed to create admin", error.stack);
-      throw new BadRequestException("Failed to create admin");
+      this.logger.error('Failed to create admin', error.stack);
+      throw new BadRequestException('Failed to create admin');
     }
   }
 
@@ -143,19 +143,19 @@ export class AdminService {
       return await this.prisma.admin.update({ where: { id }, data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2025") {
+        if (error.code === 'P2025') {
           this.logger.warn(`Admin with ID ${id} not found`);
-          throw new NotFoundException("Admin not found");
+          throw new NotFoundException('Admin not found');
         }
-        if (error.code === "P2002") {
+        if (error.code === 'P2002') {
           this.logger.warn(
-            `Username ${typeof data.username === "string" ? data.username : ""} already exists`,
+            `Username ${typeof data.username === 'string' ? data.username : ''} already exists`,
           );
-          throw new ConflictException("Username already exists");
+          throw new ConflictException('Username already exists');
         }
       }
-      this.logger.error("Failed to update admin", error.stack);
-      throw new BadRequestException("Failed to update admin");
+      this.logger.error('Failed to update admin', error.stack);
+      throw new BadRequestException('Failed to update admin');
     }
   }
 
@@ -164,13 +164,13 @@ export class AdminService {
       return await this.prisma.admin.delete({ where: { id } });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2025") {
+        if (error.code === 'P2025') {
           this.logger.warn(`Admin with ID ${id} not found`);
-          throw new NotFoundException("Admin not found");
+          throw new NotFoundException('Admin not found');
         }
       }
-      this.logger.error("Failed to delete admin", error.stack);
-      throw new BadRequestException("Failed to delete admin");
+      this.logger.error('Failed to delete admin', error.stack);
+      throw new BadRequestException('Failed to delete admin');
     }
   }
 
@@ -190,7 +190,7 @@ export class AdminService {
     data: CreateDepartmentDto,
   ): Promise<Department> {
     const department = await this.departmentService.create(data);
-    this.eventEmitter.emit("department.created", department);
+    this.eventEmitter.emit('department.created', department);
     return department;
   }
 
@@ -233,7 +233,7 @@ export class AdminService {
       include: { department: { select: { id: true, name: true } } },
     });
     if (!student) {
-      throw new NotFoundException("Account not found");
+      throw new NotFoundException('Account not found');
     }
     return student as unknown as Student;
   }
@@ -280,7 +280,6 @@ export class AdminService {
         return {
           ...studentData,
           password: bcrypt.hashSync(password, bcrypt.genSaltSync()),
-          department: { connect: { id: student.departmentId } },
         };
       }),
     );
@@ -295,7 +294,7 @@ export class AdminService {
     if (newPassword && confirmPassword) {
       if (newPassword !== confirmPassword) {
         throw new BadRequestException(
-          "New password and confirm password do not match",
+          'New password and confirm password do not match',
         );
       }
       const salt = await bcrypt.genSalt();
@@ -305,10 +304,10 @@ export class AdminService {
       where: { id },
     });
     if (!current) {
-      throw new NotFoundException("Account not found");
+      throw new NotFoundException('Account not found');
     }
     const same = (a: unknown, b: unknown) =>
-      String(a ?? "").trim() === String(b ?? "").trim();
+      String(a ?? '').trim() === String(b ?? '').trim();
     const payload: Record<string, unknown> = { ...studentData };
     if (same(payload.email, current.email)) delete payload.email;
     if (same(payload.username, current.username)) delete payload.username;
@@ -382,7 +381,7 @@ export class AdminService {
     if (newPassword && confirmPassword) {
       if (newPassword !== confirmPassword) {
         throw new BadRequestException(
-          "New password and confirm password do not match",
+          'New password and confirm password do not match',
         );
       }
       const salt = await bcrypt.genSalt();
@@ -471,9 +470,9 @@ export class AdminService {
         semester: { connect: { id: semesterId } },
       });
     }
-    this.eventEmitter.emit("course.created", createdCourse);
+    this.eventEmitter.emit('course.created', createdCourse);
     return {
-      message: "Course created successfully",
+      message: 'Course created successfully',
     };
   }
 
@@ -503,7 +502,7 @@ export class AdminService {
       }),
     });
     return {
-      message: "Course updated successfully",
+      message: 'Course updated successfully',
     };
   }
 
@@ -741,7 +740,7 @@ export class AdminService {
     ]);
 
     return {
-      message: "Course on semester updated successfully",
+      message: 'Course on semester updated successfully',
     };
   }
 
@@ -836,7 +835,7 @@ export class AdminService {
     try {
       return await this.sessionService.findAll(true);
     } catch (error) {
-      this.logger.error("Failed to retrieve enrollment sessions", error);
+      this.logger.error('Failed to retrieve enrollment sessions', error);
       throw error;
     }
   }
@@ -845,7 +844,7 @@ export class AdminService {
     try {
       return await this.sessionService.findById(id, true);
     } catch (error) {
-      this.logger.error("Failed to retrieve enrollment session", error);
+      this.logger.error('Failed to retrieve enrollment session', error);
       throw error;
     }
   }
@@ -854,7 +853,7 @@ export class AdminService {
     try {
       return await this.sessionService.findBySemesterId(semesterId, true);
     } catch (error) {
-      this.logger.error("Failed to retrieve enrollment sessions", error);
+      this.logger.error('Failed to retrieve enrollment sessions', error);
       throw error;
     }
   }
@@ -869,7 +868,7 @@ export class AdminService {
         semester: { connect: { id: data.semesterId } },
       });
     } catch (error) {
-      this.logger.error("Failed to create enrollment session", error);
+      this.logger.error('Failed to create enrollment session', error);
       throw error;
     }
   }
@@ -887,7 +886,7 @@ export class AdminService {
       }));
       return await this.sessionService.createMany(formattedSessions);
     } catch (error) {
-      this.logger.error("Failed to create enrollment sessions", error);
+      this.logger.error('Failed to create enrollment sessions', error);
       throw error;
     }
   }
@@ -909,7 +908,7 @@ export class AdminService {
 
       return await this.sessionService.update(id, updateData);
     } catch (error) {
-      this.logger.error("Failed to update enrollment session", error);
+      this.logger.error('Failed to update enrollment session', error);
       throw error;
     }
   }
@@ -918,7 +917,7 @@ export class AdminService {
     try {
       return await this.sessionService.delete(id);
     } catch (error) {
-      this.logger.error("Failed to delete enrollment session", error);
+      this.logger.error('Failed to delete enrollment session', error);
       throw error;
     }
   }
@@ -927,7 +926,7 @@ export class AdminService {
     try {
       return await this.sessionService.deleteMany(ids);
     } catch (error) {
-      this.logger.error("Failed to delete enrollment sessions", error);
+      this.logger.error('Failed to delete enrollment sessions', error);
       throw error;
     }
   }
@@ -938,7 +937,7 @@ export class AdminService {
     try {
       return await this.examScheduleService.findAll(includeCourseOnSemester);
     } catch (error) {
-      this.logger.error("Failed to retrieve exam schedules", error);
+      this.logger.error('Failed to retrieve exam schedules', error);
       throw error;
     }
   }
@@ -953,7 +952,7 @@ export class AdminService {
         includeCourseOnSemester,
       );
     } catch (error) {
-      this.logger.error("Failed to retrieve exam schedule", error);
+      this.logger.error('Failed to retrieve exam schedule', error);
       throw error;
     }
   }
@@ -970,7 +969,7 @@ export class AdminService {
       };
       return await this.examScheduleService.create(examScheduleData);
     } catch (error) {
-      this.logger.error("Failed to create exam schedule", error);
+      this.logger.error('Failed to create exam schedule', error);
       throw error;
     }
   }
@@ -991,7 +990,7 @@ export class AdminService {
       }));
       return await this.examScheduleService.createMany(examSchedules);
     } catch (error) {
-      this.logger.error("Failed to create exam schedules", error);
+      this.logger.error('Failed to create exam schedules', error);
       throw error;
     }
   }
@@ -1015,7 +1014,7 @@ export class AdminService {
 
       return await this.examScheduleService.update(id, updateData);
     } catch (error) {
-      this.logger.error("Failed to update exam schedule", error);
+      this.logger.error('Failed to update exam schedule', error);
       throw error;
     }
   }
@@ -1024,7 +1023,7 @@ export class AdminService {
     try {
       return await this.examScheduleService.delete(id);
     } catch (error) {
-      this.logger.error("Failed to delete exam schedule", error);
+      this.logger.error('Failed to delete exam schedule', error);
       throw error;
     }
   }
@@ -1033,7 +1032,7 @@ export class AdminService {
     try {
       return await this.examScheduleService.deleteMany(ids);
     } catch (error) {
-      this.logger.error("Failed to delete exam schedules", error);
+      this.logger.error('Failed to delete exam schedules', error);
       throw error;
     }
   }
@@ -1044,7 +1043,7 @@ export class AdminService {
     try {
       return await this.notificationService.findAll();
     } catch (error) {
-      this.logger.error("Failed to retrieve notifications", error);
+      this.logger.error('Failed to retrieve notifications', error);
       throw error;
     }
   }
@@ -1053,7 +1052,7 @@ export class AdminService {
     try {
       return await this.notificationService.findById(id);
     } catch (error) {
-      this.logger.error("Failed to retrieve notification", error);
+      this.logger.error('Failed to retrieve notification', error);
       throw error;
     }
   }
@@ -1062,7 +1061,7 @@ export class AdminService {
     try {
       return await this.notificationService.findByUser(lecturerId, studentId);
     } catch (error) {
-      this.logger.error("Failed to retrieve notifications", error);
+      this.logger.error('Failed to retrieve notifications', error);
       throw error;
     }
   }
@@ -1080,7 +1079,7 @@ export class AdminService {
       };
       return await this.notificationService.create(notificationData);
     } catch (error) {
-      this.logger.error("Failed to create notification", error);
+      this.logger.error('Failed to create notification', error);
       throw error;
     }
   }
@@ -1101,7 +1100,7 @@ export class AdminService {
 
       return await this.notificationService.update(id, updateData);
     } catch (error) {
-      this.logger.error("Failed to update notification", error);
+      this.logger.error('Failed to update notification', error);
       throw error;
     }
   }
@@ -1110,7 +1109,7 @@ export class AdminService {
     try {
       return await this.notificationService.delete(id);
     } catch (error) {
-      this.logger.error("Failed to delete notification", error);
+      this.logger.error('Failed to delete notification', error);
       throw error;
     }
   }
@@ -1120,7 +1119,7 @@ export class AdminService {
     try {
       return await this.webhookService.findAll();
     } catch (error) {
-      this.logger.error("Failed to get all webhooks", error);
+      this.logger.error('Failed to get all webhooks', error);
       throw error;
     }
   }
@@ -1129,7 +1128,7 @@ export class AdminService {
     try {
       return await this.webhookService.findById(id);
     } catch (error) {
-      this.logger.error("Failed to get webhook by id", error);
+      this.logger.error('Failed to get webhook by id', error);
       throw error;
     }
   }
@@ -1138,7 +1137,7 @@ export class AdminService {
     try {
       return await this.webhookService.findByUser(lecturerId, studentId);
     } catch (error) {
-      this.logger.error("Failed to get webhooks by user", error);
+      this.logger.error('Failed to get webhooks by user', error);
       throw error;
     }
   }
@@ -1155,7 +1154,7 @@ export class AdminService {
       };
       return await this.webhookService.create(webhookData);
     } catch (error) {
-      this.logger.error("Failed to create webhook", error);
+      this.logger.error('Failed to create webhook', error);
       throw error;
     }
   }
@@ -1174,7 +1173,7 @@ export class AdminService {
 
       return await this.webhookService.update(id, updateData);
     } catch (error) {
-      this.logger.error("Failed to update webhook", error);
+      this.logger.error('Failed to update webhook', error);
       throw error;
     }
   }
@@ -1183,7 +1182,7 @@ export class AdminService {
     try {
       return await this.webhookService.delete(id);
     } catch (error) {
-      this.logger.error("Failed to delete webhook", error);
+      this.logger.error('Failed to delete webhook', error);
       throw error;
     }
   }
@@ -1192,7 +1191,7 @@ export class AdminService {
     try {
       return await this.webhookService.toggleActive(id);
     } catch (error) {
-      this.logger.error("Failed to toggle webhook active", error);
+      this.logger.error('Failed to toggle webhook active', error);
       throw error;
     }
   }
@@ -1202,7 +1201,7 @@ export class AdminService {
     try {
       return await this.postService.findAll(includeAdmin, includeDepartment);
     } catch (error) {
-      this.logger.error("Failed to retrieve posts", error);
+      this.logger.error('Failed to retrieve posts', error);
       throw error;
     }
   }
@@ -1219,7 +1218,7 @@ export class AdminService {
         includeDepartment,
       );
     } catch (error) {
-      this.logger.error("Failed to retrieve post", error);
+      this.logger.error('Failed to retrieve post', error);
       throw error;
     }
   }
@@ -1236,7 +1235,7 @@ export class AdminService {
         includeDepartment,
       );
     } catch (error) {
-      this.logger.error("Failed to retrieve posts by department", error);
+      this.logger.error('Failed to retrieve posts by department', error);
       throw error;
     }
   }
@@ -1248,7 +1247,7 @@ export class AdminService {
         includeDepartment,
       );
     } catch (error) {
-      this.logger.error("Failed to retrieve global posts", error);
+      this.logger.error('Failed to retrieve global posts', error);
       throw error;
     }
   }
@@ -1266,7 +1265,7 @@ export class AdminService {
         }),
       });
     } catch (error) {
-      this.logger.error("Failed to create post", error);
+      this.logger.error('Failed to create post', error);
       throw error;
     }
   }
@@ -1288,7 +1287,7 @@ export class AdminService {
 
       return await this.postService.update(id, updateData);
     } catch (error) {
-      this.logger.error("Failed to update post", error);
+      this.logger.error('Failed to update post', error);
       throw error;
     }
   }
@@ -1297,7 +1296,7 @@ export class AdminService {
     try {
       return await this.postService.delete(id);
     } catch (error) {
-      this.logger.error("Failed to delete post", error);
+      this.logger.error('Failed to delete post', error);
       throw error;
     }
   }
@@ -1306,7 +1305,7 @@ export class AdminService {
     try {
       return await this.postService.deleteMany(ids);
     } catch (error) {
-      this.logger.error("Failed to delete posts", error);
+      this.logger.error('Failed to delete posts', error);
       throw error;
     }
   }

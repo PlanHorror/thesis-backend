@@ -121,8 +121,12 @@ kubectl apply -f "$TEMP_DEPLOY"
 kubectl apply -f "$SCRIPT_DIR/backend/service.yaml"
 kubectl apply -f "$SCRIPT_DIR/backend/ingress-aws.yaml"
 
+# Force pods to pull the latest image (needed when tag is "latest")
+echo "🔄 Rolling out new version..."
+kubectl rollout restart deployment/backend -n $NAMESPACE
+
 echo "⏳ Waiting for Backend to be ready..."
-kubectl wait --for=condition=ready pod -l app=backend -n $NAMESPACE --timeout=180s
+kubectl rollout status deployment/backend -n $NAMESPACE --timeout=180s
 
 # Clean up temp file
 rm -f "$TEMP_DEPLOY"
