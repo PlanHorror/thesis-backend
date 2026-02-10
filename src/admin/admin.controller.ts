@@ -13,11 +13,20 @@ import { AuthGuard } from '@nestjs/passport';
 import { RoleGuard } from 'common/guard/role.guard';
 import { Role } from 'common';
 import { CreateAdminDto, UpdateAdminDto } from './dto/admin.dto';
+import { SeedService } from './seed/seed.service';
 
 @UseGuards(AuthGuard('accessToken'), new RoleGuard([Role.ADMIN]))
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly seedService: SeedService,
+  ) {}
+
+  @Post('seed')
+  async seed() {
+    return this.seedService.seed();
+  }
 
   @Get('all')
   async findAll() {

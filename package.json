@@ -15,6 +15,7 @@
     "start:migrate:prod": "yarn db:migrate && node dist/src/main.js",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
+    "db:seed": "prisma db seed",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

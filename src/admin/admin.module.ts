@@ -29,6 +29,7 @@ import { PostController } from './post/post.controller';
 import { PostModule } from 'src/post/post.module';
 import { AdminRequestController } from './request/request.controller';
 import { RequestModule } from 'src/request/request.module';
+import { SeedService } from './seed/seed.service';
 
 @Module({
   controllers: [
@@ -47,7 +48,7 @@ import { RequestModule } from 'src/request/request.module';
     WebhookController,
     PostController,
   ],
-  providers: [AdminService, PrismaService],
+  providers: [AdminService, PrismaService, SeedService],
   exports: [AdminService],
   imports: [
     StudentModule,
