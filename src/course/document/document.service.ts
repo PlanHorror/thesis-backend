@@ -3,17 +3,17 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CourseDocument, Prisma } from '@prisma/client';
+} from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { CourseDocument, Prisma } from "@prisma/client";
 import {
+  deleteFile,
   DocumentCreate,
   DocumentUpdate,
   generateFileName,
   saveFile,
-  deleteFile,
-} from 'common';
-import { PrismaService } from 'src/prisma/prisma.service';
+} from "common";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class DocumentService {
@@ -33,13 +33,20 @@ export class DocumentService {
         where: { id },
       });
       if (!document) {
-        throw new NotFoundException('Document not found');
+        throw new NotFoundException("Document not found");
       }
       return document;
     } catch (error) {
-      this.logger.error('Failed to retrieve document', error.stack);
-      throw new NotFoundException('Document not found');
+      this.logger.error("Failed to retrieve document", error.stack);
+      throw new NotFoundException("Document not found");
     }
+  }
+
+  async getFilePathForDownload(
+    id: string,
+  ): Promise<{ path: string; title: string }> {
+    const document = await this.findById(id);
+    return { path: document.path, title: document.title };
   }
 
   async findByCourseOnSemesterId(
@@ -50,13 +57,13 @@ export class DocumentService {
         where: { courseOnSemesterId },
       });
     } catch (error) {
-      this.logger.error('Failed to retrieve documents', error.stack);
-      throw new NotFoundException('Documents not found');
+      this.logger.error("Failed to retrieve documents", error.stack);
+      throw new NotFoundException("Documents not found");
     }
   }
 
   async create(
-    data: Omit<Prisma.CourseDocumentCreateInput, 'path'>,
+    data: Omit<Prisma.CourseDocumentCreateInput, "path">,
     file: Express.Multer.File,
   ) {
     const path = `attachments/${generateFileName(file)}`;
@@ -78,18 +85,18 @@ export class DocumentService {
 
       // Emit event for document created
       const courseName =
-        (document as any).courseOnSemester?.course?.name || 'Unknown Course';
-      this.eventEmitter.emit('document.created', document, courseName);
+        (document as any).courseOnSemester?.course?.name || "Unknown Course";
+      this.eventEmitter.emit("document.created", document, courseName);
 
       return document;
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
           `CourseOnSemester with ID ${data.courseOnSemester?.connect?.id} not found`,
         );
       }
-      this.logger.error('Failed to create document', error.stack);
-      throw new BadRequestException('Failed to create document');
+      this.logger.error("Failed to create document", error.stack);
+      throw new BadRequestException("Failed to create document");
     }
   }
 
@@ -109,15 +116,15 @@ export class DocumentService {
     try {
       await this.prisma.courseDocument.createMany({ data: documentsData });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
           `One or more courses not found for the provided documents`,
         );
       }
-      this.logger.error('Failed to create documents', error.stack);
-      throw new BadRequestException('Failed to create documents');
+      this.logger.error("Failed to create documents", error.stack);
+      throw new BadRequestException("Failed to create documents");
     }
-    return { message: 'Documents created successfully' };
+    return { message: "Documents created successfully" };
   }
 
   async update(data: DocumentUpdate): Promise<CourseDocument> {
@@ -141,16 +148,16 @@ export class DocumentService {
 
       // Emit event for document updated
       const courseName =
-        (document as any).courseOnSemester?.course?.name || 'Unknown Course';
-      this.eventEmitter.emit('document.updated', document, courseName);
+        (document as any).courseOnSemester?.course?.name || "Unknown Course";
+      this.eventEmitter.emit("document.updated", document, courseName);
 
       return document;
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`Document with ID ${data.id} not found`);
       }
-      this.logger.error('Failed to update document', error.stack);
-      throw new BadRequestException('Failed to update document');
+      this.logger.error("Failed to update document", error.stack);
+      throw new BadRequestException("Failed to update document");
     }
   }
 
@@ -172,13 +179,13 @@ export class DocumentService {
       await Promise.all(listSaveFile);
       await this.prisma.$transaction(updatePromises);
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`Many documents not found`);
       }
-      this.logger.error('Failed to update documents', error.stack);
-      throw new BadRequestException('Failed to update documents');
+      this.logger.error("Failed to update documents", error.stack);
+      throw new BadRequestException("Failed to update documents");
     }
-    return { message: 'Documents updated successfully' };
+    return { message: "Documents updated successfully" };
   }
 
   async delete(id: string) {
@@ -200,7 +207,7 @@ export class DocumentService {
       }
 
       const courseName =
-        document.courseOnSemester?.course?.name || 'Unknown Course';
+        document.courseOnSemester?.course?.name || "Unknown Course";
       const courseOnSemesterId = document.courseOnSemesterId;
       const documentTitle = document.title;
 
@@ -210,18 +217,18 @@ export class DocumentService {
 
       // Emit event for document deleted
       this.eventEmitter.emit(
-        'document.deleted',
+        "document.deleted",
         courseOnSemesterId,
         documentTitle,
       );
 
       return deletedDocument;
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(`Document with ID ${id} not found`);
       }
-      this.logger.error('Failed to delete document', error.stack);
-      throw new BadRequestException('Failed to delete document');
+      this.logger.error("Failed to delete document", error.stack);
+      throw new BadRequestException("Failed to delete document");
     }
   }
 
@@ -231,13 +238,13 @@ export class DocumentService {
         where: { id: { in: ids } },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('One or more documents not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("One or more documents not found");
       }
-      this.logger.error('Failed to delete documents', error.stack);
-      throw new BadRequestException('Failed to delete documents');
+      this.logger.error("Failed to delete documents", error.stack);
+      throw new BadRequestException("Failed to delete documents");
     }
-    return { message: 'Documents deleted successfully' };
+    return { message: "Documents deleted successfully" };
   }
 
   async deleteByCourseOnSemesterId(
@@ -248,15 +255,15 @@ export class DocumentService {
         where: { courseOnSemesterId },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
           `No documents found for courseOnSemester ID ${courseOnSemesterId}`,
         );
       }
-      this.logger.error('Failed to delete documents by course ID', error.stack);
-      throw new BadRequestException('Failed to delete documents');
+      this.logger.error("Failed to delete documents by course ID", error.stack);
+      throw new BadRequestException("Failed to delete documents");
     }
-    return { message: 'Documents deleted successfully' };
+    return { message: "Documents deleted successfully" };
   }
 
   async createForLecturer(
@@ -293,18 +300,18 @@ export class DocumentService {
 
       // Emit event for document created
       const courseName =
-        document.courseOnSemester?.course?.name || 'Unknown Course';
-      this.eventEmitter.emit('document.created', document, courseName);
+        document.courseOnSemester?.course?.name || "Unknown Course";
+      this.eventEmitter.emit("document.created", document, courseName);
 
       return document;
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new NotFoundException(
-          'CourseOnSemester not found or you are not authorized to add documents to this course',
+          "CourseOnSemester not found or you are not authorized to add documents to this course",
         );
       }
-      this.logger.error('Failed to create document for lecturer', error.stack);
-      throw new BadRequestException('Failed to create document');
+      this.logger.error("Failed to create document for lecturer", error.stack);
+      throw new BadRequestException("Failed to create document");
     }
   }
 
@@ -345,16 +352,16 @@ export class DocumentService {
 
       // Emit event for document updated
       const courseName =
-        document.courseOnSemester?.course?.name || 'Unknown Course';
-      this.eventEmitter.emit('document.updated', document, courseName);
+        document.courseOnSemester?.course?.name || "Unknown Course";
+      this.eventEmitter.emit("document.updated", document, courseName);
 
       return document;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to update document for lecturer', error.stack);
-      throw new BadRequestException('Failed to update document');
+      this.logger.error("Failed to update document for lecturer", error.stack);
+      throw new BadRequestException("Failed to update document");
     }
   }
 
@@ -382,7 +389,7 @@ export class DocumentService {
 
       if (!document) {
         throw new NotFoundException(
-          'Document not found or you are not authorized to delete this document',
+          "Document not found or you are not authorized to delete this document",
         );
       }
 
@@ -399,18 +406,18 @@ export class DocumentService {
 
       // Emit event for document deleted
       this.eventEmitter.emit(
-        'document.deleted',
+        "document.deleted",
         courseOnSemesterId,
         documentTitle,
       );
 
-      return { message: 'Document deleted successfully' };
+      return { message: "Document deleted successfully" };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to delete document for lecturer', error.stack);
-      throw new BadRequestException('Failed to delete document');
+      this.logger.error("Failed to delete document for lecturer", error.stack);
+      throw new BadRequestException("Failed to delete document");
     }
   }
 }
