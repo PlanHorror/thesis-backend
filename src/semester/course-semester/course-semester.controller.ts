@@ -1,7 +1,16 @@
-import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -11,6 +20,7 @@ import {
 import type { Lecturer } from "@prisma/client";
 import { GetUser, Role, RoleGuard } from "common";
 import { CourseSemesterService } from "./course-semester.service";
+import { LecturerScheduleUpdateDto } from "./dto/lecturer-schedule-update.dto";
 
 /** Query params come as strings; coerce to boolean so include* flags work. */
 function parseIncludeFlag(value: unknown): boolean {
@@ -36,6 +46,31 @@ export class CourseSemesterController {
   @ApiResponse({ status: 401, description: "Unauthorized" })
   async getMyCourses(@GetUser() lecturer: Lecturer) {
     return await this.courseSemesterService.findByLecturerId(lecturer.id);
+  }
+
+  @Patch(":id/lecturer-schedule")
+  @UseGuards(new RoleGuard([Role.LECTURER]))
+  @ApiOperation({
+    summary: "Update meeting URL and session details (lecturer only)",
+  })
+  @ApiParam({ name: "id", description: "Course semester ID" })
+  @ApiBody({ type: LecturerScheduleUpdateDto })
+  @ApiResponse({
+    status: 200,
+    description: "Schedule details updated successfully",
+  })
+  @ApiResponse({ status: 403, description: "Not the lecturer for this course" })
+  @ApiResponse({ status: 404, description: "Course semester not found" })
+  async updateLecturerSchedule(
+    @Param("id") id: string,
+    @Body() dto: LecturerScheduleUpdateDto,
+    @GetUser() lecturer: Lecturer,
+  ) {
+    return await this.courseSemesterService.updateScheduleByLecturer(
+      id,
+      lecturer.id,
+      dto,
+    );
   }
 
   @Get("all")
@@ -127,6 +162,31 @@ export class CourseSemesterController {
       id,
       parseIncludeFlag(includeCourses),
       parseIncludeFlag(includeSemesters),
+    );
+  }
+
+  @Get(":id/schedule-changes")
+  @ApiOperation({
+    summary: "Get schedule change history for a course-semester",
+  })
+  @ApiParam({ name: "id", description: "Course Semester ID" })
+  @ApiQuery({
+    name: "limit",
+    description: "Max number of changes to return",
+    required: false,
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Schedule changes returned successfully",
+  })
+  async getScheduleChanges(
+    @Param("id") id: string,
+    @Query("limit") limit?: number,
+  ) {
+    return await this.courseSemesterService.findScheduleChanges(
+      id,
+      limit ? Number(limit) : 10,
     );
   }
 }

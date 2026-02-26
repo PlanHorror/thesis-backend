@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -214,6 +215,82 @@ export class CourseSemesterService {
         `Error deleting course on semester by semesterId: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * Update only meeting/location fields by the assigned lecturer.
+   * Used for lecturers to set or change meeting URL and mode without admin.
+   */
+  async updateScheduleByLecturer(
+    id: string,
+    lecturerId: string,
+    data: {
+      mode?: "ONLINE" | "ON_CAMPUS" | "HYBRID";
+      location?: string | null;
+      meetingUrl?: string | null;
+    },
+  ) {
+    const existing = await this.prisma.courseOnSemester.findUnique({
+      where: { id },
+      include: { course: true, enrollments: { select: { studentId: true } } },
+    });
+    if (!existing) {
+      throw new NotFoundException("Course-semester not found");
+    }
+    if (existing.lecturerId !== lecturerId) {
+      throw new ForbiddenException(
+        "You can only update schedule details for courses you teach",
+      );
+    }
+
+    const updateData: Prisma.CourseOnSemesterUpdateInput = {};
+    if (data.mode !== undefined) updateData.mode = data.mode;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.meetingUrl !== undefined) updateData.meetingUrl = data.meetingUrl;
+
+    if (Object.keys(updateData).length === 0) {
+      return existing;
+    }
+
+    const updated = await this.prisma.courseOnSemester.update({
+      where: { id },
+      data: updateData,
+      include: { course: true },
+    });
+
+    const hasScheduleChange =
+      (existing as any).mode !== (updated as any).mode ||
+      (existing.location ?? "") !== (updated.location ?? "") ||
+      (existing as any).meetingUrl !== (updated as any).meetingUrl;
+
+    if (hasScheduleChange) {
+      await this.prisma.scheduleChange.create({
+        data: {
+          courseOnSemesterId: id,
+          changedBy: lecturerId,
+          changeType: "LECTURER_SCHEDULE_UPDATE",
+          oldMode: (existing as any).mode ?? undefined,
+          newMode: (updated as any).mode ?? undefined,
+          oldLocation: existing.location ?? undefined,
+          newLocation: updated.location ?? undefined,
+          oldMeetingUrl: (existing as any).meetingUrl ?? undefined,
+          newMeetingUrl: (updated as any).meetingUrl ?? undefined,
+        },
+      });
+
+      const courseName = existing.course?.name ?? "Course";
+      this.eventEmitter.emit("course_semester.updated", updated, courseName);
+    }
+
+    return updated;
+  }
+
+  async findScheduleChanges(courseOnSemesterId: string, limit = 10) {
+    return await this.prisma.scheduleChange.findMany({
+      where: { courseOnSemesterId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
   }
 
   async deleteMany(ids: string[]) {
