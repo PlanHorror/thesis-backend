@@ -681,31 +681,104 @@ export class AdminService {
       updateDocuments,
       createDocuments,
       deleteDocumentIds,
-      ...courseOnSemesterData
+      courseDocuments,
+      ...rest
     } = data;
+
+    const scheduleFields = {
+      dayOfWeek: rest.dayOfWeek,
+      startTime: rest.startTime,
+      endTime: rest.endTime,
+      location: rest.location,
+      mode: rest.mode,
+      meetingUrl: rest.meetingUrl,
+    };
+
     if (
-      await this.prisma.courseOnSemester.findFirst({
+      lecturerId &&
+      scheduleFields.dayOfWeek != null &&
+      scheduleFields.startTime != null &&
+      scheduleFields.endTime != null &&
+      (await this.prisma.courseOnSemester.findFirst({
         where: {
-          lecturerId: lecturerId,
-          dayOfWeek: courseOnSemesterData.dayOfWeek,
-          startTime: { lt: courseOnSemesterData.endTime },
-          endTime: { gt: courseOnSemesterData.startTime },
-          NOT: { id: id },
+          lecturerId,
+          dayOfWeek: scheduleFields.dayOfWeek,
+          startTime: { lt: scheduleFields.endTime },
+          endTime: { gt: scheduleFields.startTime },
+          NOT: { id },
         },
-      })
+      }))
     ) {
       throw new BadRequestException(
-        `Lecturer with ID ${lecturerId} has a scheduling conflict on day ${courseOnSemesterData.dayOfWeek} between ${courseOnSemesterData.startTime} and ${courseOnSemesterData.endTime}`,
+        `Lecturer has a scheduling conflict on day ${scheduleFields.dayOfWeek} between ${scheduleFields.startTime} and ${scheduleFields.endTime}`,
       );
     }
 
+    const existing = await this.prisma.courseOnSemester.findUnique({
+      where: { id },
+      include: { course: true, enrollments: { select: { studentId: true } } },
+    });
+    if (!existing) {
+      throw new NotFoundException("Course-semester not found");
+    }
+
+    const updated = await this.courseOnSemesterService.update(id, {
+      ...scheduleFields,
+      capacity: rest.capacity,
+      semester: { connect: { id: semesterId } },
+      course: { connect: { id: courseId } },
+      ...(lecturerId && { lecturer: { connect: { id: lecturerId } } }),
+    });
+
+    const hasScheduleChange =
+      existing.dayOfWeek !== scheduleFields.dayOfWeek ||
+      existing.startTime !== scheduleFields.startTime ||
+      existing.endTime !== scheduleFields.endTime ||
+      (existing.location ?? "") !== (scheduleFields.location ?? "") ||
+      (existing as any).mode !== (scheduleFields.mode ?? "ON_CAMPUS") ||
+      (existing as any).meetingUrl !== (scheduleFields.meetingUrl ?? "");
+
+    if (hasScheduleChange) {
+      await this.prisma.scheduleChange.create({
+        data: {
+          courseOnSemesterId: id,
+          changedBy: "admin",
+          changeType: "SCHEDULE_UPDATE",
+          oldDayOfWeek: existing.dayOfWeek,
+          newDayOfWeek: scheduleFields.dayOfWeek ?? undefined,
+          oldStartTime: existing.startTime ?? undefined,
+          newStartTime: scheduleFields.startTime ?? undefined,
+          oldEndTime: existing.endTime ?? undefined,
+          newEndTime: scheduleFields.endTime ?? undefined,
+          oldLocation: existing.location ?? undefined,
+          newLocation: scheduleFields.location ?? undefined,
+          oldMode: (existing as any).mode ?? undefined,
+          newMode: scheduleFields.mode ?? undefined,
+          oldMeetingUrl: (existing as any).meetingUrl ?? undefined,
+          newMeetingUrl: scheduleFields.meetingUrl ?? undefined,
+        },
+      });
+
+      const courseName = existing.course?.name ?? "Course";
+      const changeMsg = `Schedule updated for ${courseName}. Check your timetable for changes.`;
+      const lecturerIds = existing.lecturerId ? [existing.lecturerId] : [];
+      const studentIds = existing.enrollments?.map((e) => e.studentId) ?? [];
+      const notifyUserIds = [...lecturerIds, ...studentIds];
+      for (const userId of notifyUserIds) {
+        const isLecturer = lecturerIds.includes(userId);
+        await this.prisma.notification.create({
+          data: {
+            title: "Schedule change",
+            message: changeMsg,
+            url: `/dashboard`,
+            type: "WARNING",
+            ...(isLecturer ? { lecturerId: userId } : { studentId: userId }),
+          },
+        });
+      }
+    }
+
     await Promise.all([
-      this.courseOnSemesterService.update(id, {
-        ...courseOnSemesterData,
-        semester: { connect: { id: semesterId } },
-        course: { connect: { id: courseId } },
-        lecturer: { connect: { id: lecturerId } },
-      }),
       ...(createDocuments && createDocuments.length > 0
         ? [
             this.documentService.createMany(

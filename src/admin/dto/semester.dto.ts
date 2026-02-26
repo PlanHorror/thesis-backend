@@ -3,10 +3,12 @@ import { Type } from "class-transformer";
 import {
   IsArray,
   IsDate,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   ValidateNested,
@@ -127,13 +129,42 @@ export class CourseOnSemesterDto {
   endTime?: number;
 
   @ApiPropertyOptional({
-    description: "Location of the class",
+    description: "Schedule mode: ONLINE, ON_CAMPUS, or HYBRID",
+    enum: ["ONLINE", "ON_CAMPUS", "HYBRID"],
+  })
+  @IsOptional()
+  @IsIn(["ONLINE", "ON_CAMPUS", "HYBRID"])
+  mode?: "ONLINE" | "ON_CAMPUS" | "HYBRID";
+
+  @ApiPropertyOptional({
+    description:
+      "Location of the class (room/building for on-campus, or leave empty for online)",
     example: "Room A101",
   })
   @IsString()
   @IsOptional()
-  @IsNotEmpty()
-  location: string;
+  location?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Meeting URL for online/hybrid sessions (e.g. Google Meet, Zoom)",
+    example: "https://meet.google.com/xxx-xxxx-xxx",
+  })
+  @IsString()
+  @IsOptional()
+  @IsUrl()
+  meetingUrl?: string;
+
+  @ApiPropertyOptional({
+    description: "Maximum enrollment capacity for the course offering",
+    example: 60,
+    minimum: 1,
+  })
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Type(() => Number)
+  capacity?: number;
 
   @ApiPropertyOptional({
     description: "Course documents to create",
