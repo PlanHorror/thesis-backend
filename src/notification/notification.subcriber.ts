@@ -704,6 +704,35 @@ export class NotificationSubscriber {
     await this.webhookService.triggerWebhooksForNotifications([notification]);
   }
 
+  // ==================== Profile Update Request Events (Admin) ====================
+
+  @OnEvent("profile_update_request.created")
+  async onProfileUpdateRequestCreated(payload: {
+    id: string;
+    userId: string;
+    role: string;
+    requestedData: Record<string, unknown>;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: profile_update_request.created - User: ${payload.userId}, Role: ${payload.role}`,
+    );
+
+    const roleLabel = payload.role === "student" ? "Student" : "Lecturer";
+    const fields = Object.keys(payload.requestedData).join(", ");
+    const notification = await this.prisma.notification.create({
+      data: {
+        isAdminBroadcast: true,
+        type: NotificationType.INFO,
+        title: "Profile Update Request",
+        message: `A ${roleLabel} has requested profile changes: ${fields}.`,
+        url: `/admin/management/requests?tab=profile`,
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToAdmin(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
   // ==================== Semester Events ====================
 
   @OnEvent("semester.started")

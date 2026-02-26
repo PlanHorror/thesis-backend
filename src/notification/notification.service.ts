@@ -1,14 +1,11 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
-  forwardRef,
-} from '@nestjs/common';
-import { Notification, Prisma } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { AppGateway } from 'src/gateway/gateway.gateway';
+} from "@nestjs/common";
+import { Notification, Prisma } from "@prisma/client";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class NotificationService {
@@ -22,7 +19,7 @@ export class NotificationService {
         lecturer: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
@@ -36,9 +33,33 @@ export class NotificationService {
       },
     });
     if (!notification) {
-      throw new NotFoundException('Notification not found');
+      throw new NotFoundException("Notification not found");
     }
     return notification;
+  }
+
+  async findByAdminBroadcast(): Promise<Notification[]> {
+    return await this.prisma.notification.findMany({
+      where: { isAdminBroadcast: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async markAdminBroadcastAsReadById(id: string): Promise<Notification> {
+    const result = await this.prisma.notification.updateMany({
+      where: { id, isAdminBroadcast: true },
+      data: { isRead: true },
+    });
+    if (result.count === 0)
+      throw new NotFoundException("Notification not found");
+    return this.findById(id);
+  }
+
+  async markAllAdminBroadcastAsRead(): Promise<{ count: number }> {
+    return this.prisma.notification.updateMany({
+      where: { isAdminBroadcast: true, isRead: false },
+      data: { isRead: true },
+    });
   }
 
   async findByUser(
@@ -47,7 +68,7 @@ export class NotificationService {
   ): Promise<Notification[]> {
     if (!lecturerId && !studentId) {
       throw new BadRequestException(
-        'Either lecturerId or studentId must be provided',
+        "Either lecturerId or studentId must be provided",
       );
     }
     const whereClause: Prisma.NotificationWhereInput = {};
@@ -62,7 +83,7 @@ export class NotificationService {
     return await this.prisma.notification.findMany({
       where: whereClause,
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
   }
@@ -74,8 +95,8 @@ export class NotificationService {
       });
       return notification;
     } catch (error) {
-      this.logger.error('Failed to create notification', error);
-      throw new BadRequestException('Failed to create notification');
+      this.logger.error("Failed to create notification", error);
+      throw new BadRequestException("Failed to create notification");
     }
   }
 
@@ -89,11 +110,11 @@ export class NotificationService {
         data,
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Notification not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Notification not found");
       }
-      this.logger.error('Failed to update notification', error);
-      throw new BadRequestException('Failed to update notification');
+      this.logger.error("Failed to update notification", error);
+      throw new BadRequestException("Failed to update notification");
     }
   }
 
@@ -103,7 +124,7 @@ export class NotificationService {
   ): Promise<{ count: number }> {
     if (!lecturerId && !studentId) {
       throw new BadRequestException(
-        'Either lecturerId or studentId must be provided',
+        "Either lecturerId or studentId must be provided",
       );
     }
     const whereClause: Prisma.NotificationWhereInput = {
@@ -145,7 +166,7 @@ export class NotificationService {
 
       if (result.count === 0) {
         throw new NotFoundException(
-          'Notification not found or you are not authorized',
+          "Notification not found or you are not authorized",
         );
       }
 
@@ -154,8 +175,8 @@ export class NotificationService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to mark notification as read', error);
-      throw new BadRequestException('Failed to mark notification as read');
+      this.logger.error("Failed to mark notification as read", error);
+      throw new BadRequestException("Failed to mark notification as read");
     }
   }
 
@@ -165,11 +186,11 @@ export class NotificationService {
         where: { id },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Notification not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Notification not found");
       }
-      this.logger.error('Failed to delete notification', error);
-      throw new BadRequestException('Failed to delete notification');
+      this.logger.error("Failed to delete notification", error);
+      throw new BadRequestException("Failed to delete notification");
     }
   }
 
@@ -189,7 +210,7 @@ export class NotificationService {
 
       if (result.count === 0) {
         throw new NotFoundException(
-          'Notification not found or you are not authorized',
+          "Notification not found or you are not authorized",
         );
       }
 
@@ -198,8 +219,8 @@ export class NotificationService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to delete notification', error);
-      throw new BadRequestException('Failed to delete notification');
+      this.logger.error("Failed to delete notification", error);
+      throw new BadRequestException("Failed to delete notification");
     }
   }
 
@@ -223,7 +244,7 @@ export class NotificationService {
 
       if (!notification) {
         throw new NotFoundException(
-          'Notification not found or you are not authorized',
+          "Notification not found or you are not authorized",
         );
       }
 
@@ -232,8 +253,8 @@ export class NotificationService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to find notification', error);
-      throw new BadRequestException('Failed to find notification');
+      this.logger.error("Failed to find notification", error);
+      throw new BadRequestException("Failed to find notification");
     }
   }
 
@@ -244,7 +265,7 @@ export class NotificationService {
     try {
       if (!lecturerId && !studentId) {
         throw new BadRequestException(
-          'Either lecturerId or studentId must be provided',
+          "Either lecturerId or studentId must be provided",
         );
       }
 
@@ -260,8 +281,8 @@ export class NotificationService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error('Failed to delete all notifications', error);
-      throw new BadRequestException('Failed to delete all notifications');
+      this.logger.error("Failed to delete all notifications", error);
+      throw new BadRequestException("Failed to delete all notifications");
     }
   }
 }
