@@ -1,104 +1,161 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import {
-  ApiTags,
   ApiOperation,
-  ApiResponse,
-  ApiQuery,
   ApiParam,
-} from '@nestjs/swagger';
-import { PostService } from './post.service';
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import { IsAuthenticated, OptionalAuthGuard } from "common";
+import { PostService } from "./post.service";
 
-@ApiTags('Posts')
-@Controller('post')
+@ApiTags("Posts")
+@Controller("post")
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get('global')
-  @ApiOperation({ summary: 'Get all global posts' })
+  @Get("feed")
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({
+    summary: "Get posts feed",
+    description:
+      "Authenticated users see all posts. Unauthenticated users see only isPublic posts.",
+  })
   @ApiQuery({
-    name: 'includeAdmin',
-    description: 'Include admin information',
+    name: "includeAdmin",
+    description: "Include admin information",
     required: false,
     type: String,
   })
   @ApiQuery({
-    name: 'includeDepartment',
-    description: 'Include department information',
+    name: "includeDepartment",
+    description: "Include department information",
     required: false,
     type: String,
   })
   @ApiResponse({
     status: 200,
-    description: 'Global posts returned successfully',
+    description: "Posts returned successfully",
+  })
+  async getFeed(
+    @IsAuthenticated() authenticated: boolean,
+    @Query("includeAdmin") includeAdmin?: string,
+    @Query("includeDepartment") includeDepartment?: string,
+  ) {
+    return await this.postService.findFeedPosts(
+      authenticated,
+      includeAdmin === "true",
+      includeDepartment === "true",
+    );
+  }
+
+  @Get("global")
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({
+    summary: "Get global posts",
+    description:
+      "Authenticated: all global posts. Unauthenticated: only isPublic.",
+  })
+  @ApiQuery({
+    name: "includeAdmin",
+    description: "Include admin information",
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: "includeDepartment",
+    description: "Include department information",
+    required: false,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Global posts returned successfully",
   })
   async getGlobalPosts(
-    @Query('includeAdmin') includeAdmin?: string,
-    @Query('includeDepartment') includeDepartment?: string,
+    @IsAuthenticated() authenticated: boolean,
+    @Query("includeAdmin") includeAdmin?: string,
+    @Query("includeDepartment") includeDepartment?: string,
   ) {
-    return await this.postService.findGlobalPosts(
-      includeAdmin === 'true',
-      includeDepartment === 'true',
+    return await this.postService.findGlobalFeedPosts(
+      authenticated,
+      includeAdmin === "true",
+      includeDepartment === "true",
     );
   }
 
-  @Get('department/:departmentId')
-  @ApiOperation({ summary: 'Get posts by department' })
-  @ApiParam({ name: 'departmentId', description: 'Department ID' })
+  @Get("department/:departmentId")
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({
+    summary: "Get posts by department",
+    description:
+      "Authenticated: all department posts. Unauthenticated: only isPublic.",
+  })
+  @ApiParam({ name: "departmentId", description: "Department ID" })
   @ApiQuery({
-    name: 'includeAdmin',
-    description: 'Include admin information',
+    name: "includeAdmin",
+    description: "Include admin information",
     required: false,
     type: String,
   })
   @ApiQuery({
-    name: 'includeDepartment',
-    description: 'Include department information',
+    name: "includeDepartment",
+    description: "Include department information",
     required: false,
     type: String,
   })
   @ApiResponse({
     status: 200,
-    description: 'Department posts returned successfully',
+    description: "Department posts returned successfully",
   })
-  @ApiResponse({ status: 404, description: 'Department not found' })
+  @ApiResponse({ status: 404, description: "Department not found" })
   async getPostsByDepartment(
-    @Param('departmentId') departmentId: string,
-    @Query('includeAdmin') includeAdmin?: string,
-    @Query('includeDepartment') includeDepartment?: string,
+    @IsAuthenticated() authenticated: boolean,
+    @Param("departmentId") departmentId: string,
+    @Query("includeAdmin") includeAdmin?: string,
+    @Query("includeDepartment") includeDepartment?: string,
   ) {
-    return await this.postService.findByDepartmentId(
+    return await this.postService.findDepartmentFeedPosts(
+      authenticated,
       departmentId,
-      includeAdmin === 'true',
-      includeDepartment === 'true',
+      includeAdmin === "true",
+      includeDepartment === "true",
     );
   }
 
-  @Get('find/:id')
-  @ApiOperation({ summary: 'Get post by ID' })
-  @ApiParam({ name: 'id', description: 'Post ID' })
+  @Get("find/:id")
+  @UseGuards(OptionalAuthGuard)
+  @ApiOperation({
+    summary: "Get post by ID",
+    description:
+      "Authenticated: any post. Unauthenticated: only isPublic posts.",
+  })
+  @ApiParam({ name: "id", description: "Post ID" })
   @ApiQuery({
-    name: 'includeAdmin',
-    description: 'Include admin information',
+    name: "includeAdmin",
+    description: "Include admin information",
     required: false,
     type: String,
   })
   @ApiQuery({
-    name: 'includeDepartment',
-    description: 'Include department information',
+    name: "includeDepartment",
+    description: "Include department information",
     required: false,
     type: String,
   })
-  @ApiResponse({ status: 200, description: 'Post found successfully' })
-  @ApiResponse({ status: 404, description: 'Post not found' })
+  @ApiResponse({ status: 200, description: "Post found successfully" })
+  @ApiResponse({ status: 404, description: "Post not found" })
   async getPostById(
-    @Param('id') id: string,
-    @Query('includeAdmin') includeAdmin?: string,
-    @Query('includeDepartment') includeDepartment?: string,
+    @IsAuthenticated() authenticated: boolean,
+    @Param("id") id: string,
+    @Query("includeAdmin") includeAdmin?: string,
+    @Query("includeDepartment") includeDepartment?: string,
   ) {
-    return await this.postService.findById(
+    return await this.postService.findPostByIdOrPublic(
+      authenticated,
       id,
-      includeAdmin === 'true',
-      includeDepartment === 'true',
+      includeAdmin === "true",
+      includeDepartment === "true",
     );
   }
 }
