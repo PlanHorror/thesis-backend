@@ -1,40 +1,43 @@
-import { Module } from '@nestjs/common';
-import { AdminController } from './admin.controller';
-import { AdminService } from './admin.service';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { StudentModule } from 'src/user-manager/student/student.module';
-import { LecturerModule } from 'src/user-manager/lecturer/lecturer.module';
-import { DepartmentModule } from 'src/department/department.module';
-import { LecturerController } from './lecturer/lecturer.controller';
-import { StudentController } from './student/student.controller';
-import { DepartmentController } from './department/department.controller';
-import { CourseController } from './course/course.controller';
-import { CourseModule } from 'src/course/course.module';
-import { DocumentModule } from 'src/course/document/document.module';
-import { SemesterController } from './semester/semester.controller';
-import { SemesterModule } from 'src/semester/semester.module';
-import { CourseSemesterModule } from 'src/semester/course-semester/course-semester.module';
-import { EnrollmentController } from './course/enrollment/enrollment.controller';
-import { CourseSemesterController } from './semester/course-semester/course-semester.controller';
-import { EnrollmentModule } from 'src/course/enrollment/enrollment.module';
-import { SessionController } from './course/enrollment/session/session.controller';
-import { SessionModule } from 'src/course/enrollment/session/session.module';
-import { ExamScheduleController } from './exam-schedule/exam-schedule.controller';
-import { ExamScheduleModule } from 'src/exam-schedule/exam-schedule.module';
-import { NotificationController } from './notification/notification.controller';
-import { NotificationModule } from 'src/notification/notification.module';
-import { WebhookController } from './webhook/webhook.controller';
-import { WebhookModule } from 'src/webhook/webhook.module';
-import { PostController } from './post/post.controller';
-import { PostModule } from 'src/post/post.module';
-import { AdminRequestController } from './request/request.controller';
-import { RequestModule } from 'src/request/request.module';
-import { SeedService } from './seed/seed.service';
+import { Module } from "@nestjs/common";
+import { CourseModule } from "src/course/course.module";
+import { DocumentModule } from "src/course/document/document.module";
+import { EnrollmentModule } from "src/course/enrollment/enrollment.module";
+import { SessionModule } from "src/course/enrollment/session/session.module";
+import { DepartmentModule } from "src/department/department.module";
+import { ExamScheduleModule } from "src/exam-schedule/exam-schedule.module";
+import { NotificationModule } from "src/notification/notification.module";
+import { PostModule } from "src/post/post.module";
+import { PrismaService } from "src/prisma/prisma.service";
+import { ProfileUpdateRequestModule } from "src/profile-update-request/profile-update-request.module";
+import { RequestModule } from "src/request/request.module";
+import { CourseSemesterModule } from "src/semester/course-semester/course-semester.module";
+import { SemesterModule } from "src/semester/semester.module";
+import { LecturerModule } from "src/user-manager/lecturer/lecturer.module";
+import { StudentModule } from "src/user-manager/student/student.module";
+import { WebhookModule } from "src/webhook/webhook.module";
+import { AdminController } from "./admin.controller";
+import { AdminService } from "./admin.service";
+import { CourseController } from "./course/course.controller";
+import { EnrollmentController } from "./course/enrollment/enrollment.controller";
+import { SessionController } from "./course/enrollment/session/session.controller";
+import { DepartmentController } from "./department/department.controller";
+import { ExamScheduleController } from "./exam-schedule/exam-schedule.controller";
+import { LecturerController } from "./lecturer/lecturer.controller";
+import { NotificationController } from "./notification/notification.controller";
+import { PostController } from "./post/post.controller";
+import { AdminProfileUpdateRequestController } from "./profile-update-request/profile-update-request.controller";
+import { AdminRequestController } from "./request/request.controller";
+import { SeedService } from "./seed/seed.service";
+import { CourseSemesterController } from "./semester/course-semester/course-semester.controller";
+import { SemesterController } from "./semester/semester.controller";
+import { StudentController } from "./student/student.controller";
+import { WebhookController } from "./webhook/webhook.controller";
 
 @Module({
   controllers: [
     AdminController,
     AdminRequestController,
+    AdminProfileUpdateRequestController,
     LecturerController,
     StudentController,
     DepartmentController,
@@ -65,6 +68,7 @@ import { SeedService } from './seed/seed.service';
     WebhookModule,
     PostModule,
     RequestModule,
+    ProfileUpdateRequestModule,
   ],
 })
 export class AdminModule {}
