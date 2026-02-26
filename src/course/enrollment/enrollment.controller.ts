@@ -28,6 +28,20 @@ export class EnrollmentController {
   constructor(private readonly enrollmentService: EnrollmentService) {}
 
   // Student endpoints
+  @Get("my-progress")
+  @UseGuards(AuthGuard("accessToken"), new RoleGuard([Role.STUDENT]))
+  @ApiBearerAuth("accessToken")
+  @ApiOperation({
+    summary: "Get student academic progress (semester-by-semester)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Progress data returned successfully",
+  })
+  async getMyProgress(@GetUser() student: Student) {
+    return this.enrollmentService.getStudentProgress(student.id);
+  }
+
   @Get("my-enrollments")
   @UseGuards(AuthGuard("accessToken"), new RoleGuard([Role.STUDENT]))
   @ApiBearerAuth("accessToken")
@@ -135,7 +149,29 @@ export class EnrollmentController {
     return this.enrollmentService.unenrollStudentFromCourse(student, id);
   }
 
-  // Lecturer endpoint
+  // Lecturer endpoints
+  @Get("course-semester/:courseOnSemesterId/analytics")
+  @UseGuards(AuthGuard("accessToken"), new RoleGuard([Role.LECTURER]))
+  @ApiBearerAuth("accessToken")
+  @ApiOperation({ summary: "Get course analytics (avg grade, at-risk count)" })
+  @ApiParam({
+    name: "courseOnSemesterId",
+    description: "Course on Semester ID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Analytics returned successfully",
+  })
+  async getCourseAnalytics(
+    @Param("courseOnSemesterId") courseOnSemesterId: string,
+    @GetUser() lecturer: Lecturer,
+  ) {
+    return this.enrollmentService.getCourseAnalytics(
+      courseOnSemesterId,
+      lecturer.id,
+    );
+  }
+
   @Get("course-semester/:courseOnSemesterId")
   @UseGuards(AuthGuard("accessToken"), new RoleGuard([Role.LECTURER]))
   @ApiBearerAuth("accessToken")
