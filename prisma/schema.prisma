@@ -178,6 +178,22 @@ enum LecturerTeachingRequestStatus {
   REJECTED
 }
 
+enum ProfileUpdateRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProfileUpdateRequest {
+  id            String                     @id @default(cuid())
+  userId        String
+  role          String // "student" | "lecturer"
+  requestedData Json // { fullName?, phone?, address?, gender?, birthDate?, citizenId? }
+  status        ProfileUpdateRequestStatus @default(PENDING)
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+}
+
 model StudentCourseEnrollment {
   id                 String           @id @default(cuid())
   student            Student          @relation(fields: [studentId], references: [id])
@@ -237,9 +253,10 @@ model Notification {
   lecturer   Lecturer? @relation(fields: [lecturerId], references: [id])
   lecturerId String?
 
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isAdminBroadcast Boolean  @default(false)
+  isRead           Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Webhook {
@@ -285,6 +302,9 @@ model Post {
   // Null means "Global", otherwise specific to a department
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
+
+  // Public posts visible to everyone; internal posts require authentication
+  isPublic Boolean @default(false)
 
   // Simple Attachments
   thumbnail String? // Main image URL for the feed
