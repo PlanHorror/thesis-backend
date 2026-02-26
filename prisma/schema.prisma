@@ -143,7 +143,9 @@ model CourseOnSemester {
   semesterId       String
   lecturer         Lecturer?                 @relation(fields: [lecturerId], references: [id])
   lecturerId       String?
+  mode             ScheduleMode              @default(ON_CAMPUS)
   location         String?
+  meetingUrl       String?
   dayOfWeek        Int?
   startTime        Int?
   endTime          Int?
@@ -155,8 +157,30 @@ model CourseOnSemester {
   documents        CourseDocument[]
   examSchedule     ExamSchedule?
   teachingRequests LecturerTeachingRequest[]
+  scheduleChanges  ScheduleChange[]
 
   @@unique([courseId, semesterId])
+}
+
+model ScheduleChange {
+  id                 String           @id @default(cuid())
+  courseOnSemester   CourseOnSemester @relation(fields: [courseOnSemesterId], references: [id], onDelete: Cascade)
+  courseOnSemesterId String
+  changedBy          String
+  changeType         String
+  oldDayOfWeek       Int?
+  newDayOfWeek       Int?
+  oldStartTime       Int?
+  newStartTime       Int?
+  oldEndTime         Int?
+  newEndTime         Int?
+  oldLocation        String?
+  newLocation        String?
+  oldMode            String?
+  newMode            String?
+  oldMeetingUrl      String?
+  newMeetingUrl      String?
+  createdAt          DateTime         @default(now())
 }
 
 model LecturerTeachingRequest {
@@ -170,6 +194,12 @@ model LecturerTeachingRequest {
   updatedAt          DateTime                      @updatedAt
 
   @@unique([lecturerId, courseOnSemesterId])
+}
+
+enum ScheduleMode {
+  ONLINE
+  ON_CAMPUS
+  HYBRID
 }
 
 enum LecturerTeachingRequestStatus {
