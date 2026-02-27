@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -16,9 +17,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { ProfileUpdateRequestStatus } from "@prisma/client";
+import { IsOptional, IsString, MinLength } from "class-validator";
 import { Role } from "common";
 import { RoleGuard } from "common/guard/role.guard";
 import { ProfileUpdateRequestService } from "src/profile-update-request/profile-update-request.service";
+
+class RejectProfileUpdateDto {
+  @IsString()
+  @IsOptional()
+  @MinLength(10)
+  reason?: string;
+}
 
 @ApiTags("Admin - Profile Update Requests")
 @ApiBearerAuth("accessToken")
@@ -59,7 +68,7 @@ export class AdminProfileUpdateRequestController {
   @ApiParam({ name: "id", description: "Request ID" })
   @ApiResponse({ status: 200, description: "Request rejected" })
   @ApiResponse({ status: 404, description: "Request not found" })
-  async reject(@Param("id") id: string) {
-    return this.profileUpdateRequestService.reject(id);
+  async reject(@Param("id") id: string, @Body() body: RejectProfileUpdateDto) {
+    return this.profileUpdateRequestService.reject(id, body.reason);
   }
 }

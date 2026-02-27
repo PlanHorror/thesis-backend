@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -15,10 +16,21 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { LecturerTeachingRequestStatus } from "@prisma/client";
+import {
+  CourseWithdrawalRequestStatus,
+  LecturerTeachingRequestStatus,
+} from "@prisma/client";
+import { IsOptional, IsString, MinLength } from "class-validator";
 import { Role } from "common";
 import { RoleGuard } from "common/guard/role.guard";
 import { RequestService } from "src/request/request.service";
+
+class RejectRequestDto {
+  @IsString()
+  @IsOptional()
+  @MinLength(10)
+  reason?: string;
+}
 
 @ApiTags("Admin - Requests")
 @ApiBearerAuth("accessToken")
@@ -59,7 +71,49 @@ export class AdminRequestController {
   @ApiParam({ name: "id", description: "Request ID" })
   @ApiResponse({ status: 200, description: "Request rejected" })
   @ApiResponse({ status: 404, description: "Request not found" })
-  async rejectLecturerRequest(@Param("id") id: string) {
-    return this.requestService.rejectLecturerTeachingRequest(id);
+  async rejectLecturerRequest(
+    @Param("id") id: string,
+    @Body() body: RejectRequestDto,
+  ) {
+    return this.requestService.rejectLecturerTeachingRequest(id, body.reason);
+  }
+
+  @Get("student/withdrawal/all")
+  @ApiOperation({ summary: "Get all student course withdrawal requests" })
+  @ApiQuery({
+    name: "status",
+    required: false,
+    enum: CourseWithdrawalRequestStatus,
+    description: "Filter by status",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "List of student course withdrawal requests",
+  })
+  async getAllStudentWithdrawalRequests(
+    @Query("status") status?: CourseWithdrawalRequestStatus,
+  ) {
+    return this.requestService.findAllCourseWithdrawalRequests(status);
+  }
+
+  @Patch("student/withdrawal/approve/:id")
+  @ApiOperation({ summary: "Approve a student course withdrawal request" })
+  @ApiParam({ name: "id", description: "Request ID" })
+  @ApiResponse({ status: 200, description: "Request approved" })
+  @ApiResponse({ status: 404, description: "Request not found" })
+  async approveStudentWithdrawalRequest(@Param("id") id: string) {
+    return this.requestService.approveCourseWithdrawalRequest(id);
+  }
+
+  @Patch("student/withdrawal/reject/:id")
+  @ApiOperation({ summary: "Reject a student course withdrawal request" })
+  @ApiParam({ name: "id", description: "Request ID" })
+  @ApiResponse({ status: 200, description: "Request rejected" })
+  @ApiResponse({ status: 404, description: "Request not found" })
+  async rejectStudentWithdrawalRequest(
+    @Param("id") id: string,
+    @Body() body: RejectRequestDto,
+  ) {
+    return this.requestService.rejectCourseWithdrawalRequest(id, body.reason);
   }
 }
