@@ -13,8 +13,137 @@ function timeToMinutes(hours: number, minutes = 0): number {
   return hours * 60 + minutes;
 }
 
+async function seedAdditional2026And2027Offerings() {
+  console.log(
+    "Seeding additional 2026–2027 course offerings without wiping existing data...",
+  );
+
+  const courses = await prisma.course.findMany();
+  const lecturers = await prisma.lecturer.findMany();
+
+  if (courses.length === 0 || lecturers.length === 0) {
+    console.log(
+      "No existing courses or lecturers found. Run the full seed (without APPEND_2026_2027) first.",
+    );
+    return;
+  }
+
+  // Ensure target semesters exist (Spring/Fall 2026 & 2027)
+  const targetSemestersInput = [
+    {
+      name: "Spring 2026",
+      startDate: new Date("2026-01-15"),
+      endDate: new Date("2026-05-30"),
+    },
+    {
+      name: "Fall 2026",
+      startDate: new Date("2026-08-15"),
+      endDate: new Date("2026-12-20"),
+    },
+    {
+      name: "Spring 2027",
+      startDate: new Date("2027-01-15"),
+      endDate: new Date("2027-05-30"),
+    },
+    {
+      name: "Fall 2027",
+      startDate: new Date("2027-08-15"),
+      endDate: new Date("2027-12-20"),
+    },
+  ];
+
+  const targetSemesters: { id: string }[] = [];
+  for (const sem of targetSemestersInput) {
+    const existing = await prisma.semester.findUnique({
+      where: { name: sem.name },
+    });
+    if (existing) {
+      targetSemesters.push(existing);
+    } else {
+      const created = await prisma.semester.create({ data: sem });
+      targetSemesters.push(created);
+    }
+  }
+
+  // Ensure there is an active enrollment session covering "now"
+  // for each of these semesters, so students can enroll for mock tests.
+  for (const sem of targetSemesters) {
+    const existingSession = await prisma.enrollmentSession.findFirst({
+      where: { semesterId: sem.id, isActive: true },
+    });
+    if (!existingSession) {
+      await prisma.enrollmentSession.create({
+        data: {
+          semester: { connect: { id: sem.id } },
+          name: "Mock Open Enrollment",
+          // Wide window so it's always valid during development/testing
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2030-12-31"),
+          isActive: true,
+        },
+      });
+    }
+  }
+
+  // Same time slots logic as main seed
+  const timeSlots = [
+    { start: timeToMinutes(8, 0), end: timeToMinutes(10, 0) },
+    { start: timeToMinutes(10, 0), end: timeToMinutes(12, 0) },
+    { start: timeToMinutes(13, 0), end: timeToMinutes(15, 0) },
+    { start: timeToMinutes(15, 0), end: timeToMinutes(17, 0) },
+  ];
+
+  const courseOnSemesterRecords: Array<{
+    courseId: string;
+    semesterId: string;
+    lecturerId: string | null;
+    location: string;
+    dayOfWeek: number;
+    startTime: number;
+    endTime: number;
+    capacity: number;
+  }> = [];
+
+  for (const sem of targetSemesters) {
+    courses.forEach((course, courseIdx) => {
+      const lecturerIdx = courseIdx % lecturers.length;
+      const slotIdx = courseIdx % timeSlots.length;
+      const dayIdx = Math.floor(courseIdx / timeSlots.length) % 5;
+      const slot = timeSlots[slotIdx];
+
+      courseOnSemesterRecords.push({
+        courseId: course.id,
+        semesterId: sem.id,
+        lecturerId: lecturers[lecturerIdx].id,
+        location: `Room ${String.fromCharCode(65 + (courseIdx % 5))}${200 + (courseIdx % 20)}`,
+        dayOfWeek: dayIdx + 1,
+        startTime: slot.start,
+        endTime: slot.end,
+        capacity: 50,
+      });
+    });
+  }
+
+  // Use createMany with skipDuplicates: respects @@unique([courseId, semesterId])
+  await prisma.courseOnSemester.createMany({
+    data: courseOnSemesterRecords,
+    skipDuplicates: true,
+  });
+
+  console.log(
+    `Ensured offerings for ${courses.length} courses across ${targetSemesters.length} semesters (2026–2027).`,
+  );
+}
+
 async function main() {
-  console.log("Starting seed...");
+  const appendOnly = process.env.APPEND_2026_2027 === "true";
+
+  if (appendOnly) {
+    await seedAdditional2026And2027Offerings();
+    return;
+  }
+
+  console.log("Starting full seed (will wipe existing data)...");
 
   // Clean up existing data (in reverse dependency order)
   await prisma.webhookLog.deleteMany();

@@ -60,9 +60,10 @@ model Student {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  enrollments   StudentCourseEnrollment[]
-  notifications Notification[]
-  webhooks      Webhook[]
+  enrollments              StudentCourseEnrollment[]
+  notifications            Notification[]
+  webhooks                 Webhook[]
+  courseWithdrawalRequests CourseWithdrawalRequest[]
 }
 
 model Lecturer {
@@ -136,28 +137,29 @@ model Semester {
 }
 
 model CourseOnSemester {
-  id               String                    @id @default(cuid())
-  course           Course                    @relation(fields: [courseId], references: [id])
-  courseId         String
-  semester         Semester                  @relation(fields: [semesterId], references: [id])
-  semesterId       String
-  lecturer         Lecturer?                 @relation(fields: [lecturerId], references: [id])
-  lecturerId       String?
-  mode             ScheduleMode              @default(ON_CAMPUS)
-  location         String?
-  meetingUrl       String?
-  dayOfWeek        Int?
-  startTime        Int?
-  endTime          Int?
-  capacity         Int?
-  isSummarized     Boolean                   @default(false)
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  enrollments      StudentCourseEnrollment[]
-  documents        CourseDocument[]
-  examSchedule     ExamSchedule?
-  teachingRequests LecturerTeachingRequest[]
-  scheduleChanges  ScheduleChange[]
+  id                 String                    @id @default(cuid())
+  course             Course                    @relation(fields: [courseId], references: [id])
+  courseId           String
+  semester           Semester                  @relation(fields: [semesterId], references: [id])
+  semesterId         String
+  lecturer           Lecturer?                 @relation(fields: [lecturerId], references: [id])
+  lecturerId         String?
+  mode               ScheduleMode              @default(ON_CAMPUS)
+  location           String?
+  meetingUrl         String?
+  dayOfWeek          Int?
+  startTime          Int?
+  endTime            Int?
+  capacity           Int?
+  isSummarized       Boolean                   @default(false)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  enrollments        StudentCourseEnrollment[]
+  documents          CourseDocument[]
+  examSchedule       ExamSchedule?
+  teachingRequests   LecturerTeachingRequest[]
+  scheduleChanges    ScheduleChange[]
+  withdrawalRequests CourseWithdrawalRequest[]
 
   @@unique([courseId, semesterId])
 }
@@ -190,6 +192,7 @@ model LecturerTeachingRequest {
   courseOnSemester   CourseOnSemester              @relation(fields: [courseOnSemesterId], references: [id], onDelete: Cascade)
   courseOnSemesterId String
   status             LecturerTeachingRequestStatus @default(PENDING)
+  rejectionReason    String?
   createdAt          DateTime                      @default(now())
   updatedAt          DateTime                      @updatedAt
 
@@ -214,14 +217,37 @@ enum ProfileUpdateRequestStatus {
   REJECTED
 }
 
+enum CourseWithdrawalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model ProfileUpdateRequest {
-  id            String                     @id @default(cuid())
-  userId        String
-  role          String // "student" | "lecturer"
-  requestedData Json // { fullName?, phone?, address?, gender?, birthDate?, citizenId? }
-  status        ProfileUpdateRequestStatus @default(PENDING)
-  createdAt     DateTime                   @default(now())
-  updatedAt     DateTime                   @updatedAt
+  id              String                     @id @default(cuid())
+  userId          String
+  role            String // "student" | "lecturer"
+  requestedData   Json // { fullName?, phone?, address?, gender?, birthDate?, citizenId? }
+  status          ProfileUpdateRequestStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+}
+
+model CourseWithdrawalRequest {
+  id                 String                        @id @default(cuid())
+  student            Student                       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId          String
+  enrollment         StudentCourseEnrollment?      @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+  enrollmentId       String?                       @unique
+  courseOnSemester   CourseOnSemester              @relation(fields: [courseOnSemesterId], references: [id])
+  courseOnSemesterId String
+  reason             String
+  details            String?
+  status             CourseWithdrawalRequestStatus @default(PENDING)
+  rejectionReason    String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
 }
 
 model StudentCourseEnrollment {
@@ -237,6 +263,8 @@ model StudentCourseEnrollment {
   examStatus         ExamStatus       @default(ELIGIBLE)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+
+  withdrawalRequest CourseWithdrawalRequest?
 
   @@unique([studentId, courseOnSemesterId])
 }
