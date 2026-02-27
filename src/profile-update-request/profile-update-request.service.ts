@@ -168,10 +168,16 @@ export class ProfileUpdateRequestService {
     const updated = await this.prisma.profileUpdateRequest.findUnique({
       where: { id },
     });
+
+    this.eventEmitter.emit("profile_update_request.approved", {
+      userId: req.userId,
+      role: req.role,
+    });
+
     return updated;
   }
 
-  async reject(id: string) {
+  async reject(id: string, reason?: string) {
     const req = await this.prisma.profileUpdateRequest.findUnique({
       where: { id },
     });
@@ -179,9 +185,19 @@ export class ProfileUpdateRequestService {
     if (req.status !== "PENDING")
       throw new BadRequestException("Request is not pending");
 
-    return this.prisma.profileUpdateRequest.update({
+    const updated = await this.prisma.profileUpdateRequest.update({
       where: { id },
-      data: { status: "REJECTED" },
+      data: {
+        status: "REJECTED",
+        ...(reason ? ({ rejectionReason: reason.trim() } as any) : {}),
+      },
     });
+
+    this.eventEmitter.emit("profile_update_request.rejected", {
+      userId: req.userId,
+      role: req.role,
+    });
+
+    return updated;
   }
 }
