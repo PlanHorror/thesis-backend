@@ -686,6 +686,7 @@ export class NotificationSubscriber {
     lecturerId: string;
     courseName: string;
     semesterName: string;
+    reason?: string;
   }): Promise<void> {
     this.logger.log(
       `Event: lecturer_request.rejected - Lecturer: ${payload.lecturerId}`,
@@ -696,7 +697,9 @@ export class NotificationSubscriber {
         lecturerId: payload.lecturerId,
         type: NotificationType.WARNING,
         title: "Teaching Request Declined",
-        message: `Your request to teach "${payload.courseName}" (${payload.semesterName}) has been declined.`,
+        message:
+          `Your request to teach "${payload.courseName}" (${payload.semesterName}) has been declined.` +
+          (payload.reason ? ` Reason: ${payload.reason}` : ""),
       },
     });
 
@@ -730,6 +733,140 @@ export class NotificationSubscriber {
     });
 
     this.webSocketGateway.sendNotificationToAdmin(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  @OnEvent("profile_update_request.approved")
+  async onProfileUpdateRequestApproved(payload: {
+    userId: string;
+    role: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: profile_update_request.approved - User: ${payload.userId}, Role: ${payload.role}`,
+    );
+
+    const isStudent = payload.role === "student";
+    const notification = await this.prisma.notification.create({
+      data: {
+        ...(isStudent
+          ? { studentId: payload.userId }
+          : { lecturerId: payload.userId }),
+        type: NotificationType.INFO,
+        title: "Profile Update Approved",
+        message:
+          "Your profile update request has been approved and your information has been updated.",
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToUser(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  @OnEvent("profile_update_request.rejected")
+  async onProfileUpdateRequestRejected(payload: {
+    userId: string;
+    role: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: profile_update_request.rejected - User: ${payload.userId}, Role: ${payload.role}`,
+    );
+
+    const isStudent = payload.role === "student";
+    const notification = await this.prisma.notification.create({
+      data: {
+        ...(isStudent
+          ? { studentId: payload.userId }
+          : { lecturerId: payload.userId }),
+        type: NotificationType.WARNING,
+        title: "Profile Update Declined",
+        message:
+          "Your profile update request has been declined. Please contact support if you have questions.",
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToUser(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  // ==================== Student Course Withdrawal Request Events ====================
+
+  @OnEvent("withdrawal_request.created")
+  async onWithdrawalRequestCreated(payload: {
+    id: string;
+    studentId: string;
+    courseOnSemesterId: string;
+    courseName: string;
+    semesterName: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: withdrawal_request.created - Student: ${payload.studentId}`,
+    );
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        isAdminBroadcast: true,
+        type: NotificationType.INFO,
+        title: "Course Withdrawal Request",
+        message: `A student has requested to withdraw from "${payload.courseName}" (${payload.semesterName}).`,
+        url: `/admin/management/requests?tab=student&requestId=${payload.id}`,
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToAdmin(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  @OnEvent("withdrawal_request.approved")
+  async onWithdrawalRequestApproved(payload: {
+    studentId: string;
+    courseName: string;
+    semesterName: string;
+    courseOnSemesterId?: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: withdrawal_request.approved - Student: ${payload.studentId}`,
+    );
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        studentId: payload.studentId,
+        type: NotificationType.INFO,
+        title: "Course Withdrawal Approved",
+        message: `Your request to withdraw from "${payload.courseName}" (${payload.semesterName}) has been approved. You have been unenrolled from this course.`,
+        url: "/my-courses",
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToUser(notification);
+    await this.webhookService.triggerWebhooksForNotifications([notification]);
+  }
+
+  @OnEvent("withdrawal_request.rejected")
+  async onWithdrawalRequestRejected(payload: {
+    studentId: string;
+    courseName: string;
+    semesterName: string;
+    courseOnSemesterId: string;
+    reason?: string;
+    requestId: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Event: withdrawal_request.rejected - Student: ${payload.studentId}`,
+    );
+
+    const notification = await this.prisma.notification.create({
+      data: {
+        studentId: payload.studentId,
+        type: NotificationType.WARNING,
+        title: "Course Withdrawal Declined",
+        message:
+          `Your request to withdraw from "${payload.courseName}" (${payload.semesterName}) has been declined.` +
+          (payload.reason ? ` Reason: ${payload.reason}` : ""),
+        url: `/my-courses/withdrawal/rejected/${payload.requestId}`,
+      },
+    });
+
+    this.webSocketGateway.sendNotificationToUser(notification);
     await this.webhookService.triggerWebhooksForNotifications([notification]);
   }
 
