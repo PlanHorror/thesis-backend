@@ -145,10 +145,15 @@ async function main() {
 
   console.log("Starting full seed (will wipe existing data)...");
 
-  // Clean up existing data (in reverse dependency order)
+  // Clean up existing data (reverse dependency order)
   await prisma.webhookLog.deleteMany();
   await prisma.webhook.deleteMany();
   await prisma.notification.deleteMany();
+  await prisma.aiMessage.deleteMany();
+  await prisma.aiConversation.deleteMany();
+  await prisma.profileUpdateRequest.deleteMany();
+  await prisma.courseWithdrawalRequest.deleteMany();
+  await prisma.scheduleChange.deleteMany();
   await prisma.examSchedule.deleteMany();
   await prisma.courseDocument.deleteMany();
   await prisma.studentCourseEnrollment.deleteMany();
@@ -156,12 +161,13 @@ async function main() {
   await prisma.enrollmentSession.deleteMany();
   await prisma.courseOnSemester.deleteMany();
   await prisma.course.deleteMany();
+  await prisma.post.deleteMany();
   await prisma.student.deleteMany();
   await prisma.department.deleteMany();
   await prisma.lecturer.deleteMany();
   await prisma.semester.deleteMany();
-  await prisma.post.deleteMany();
   await prisma.admin.deleteMany();
+  await prisma.supportRequest.deleteMany();
 
   console.log("Cleaned up existing data");
 
@@ -184,30 +190,55 @@ async function main() {
       username: "nguyenvana",
       email: "nguyenvana@university.edu",
       fullName: "Nguyen Van A",
+      gender: true,
+      birthDate: "1985-03-15",
+      citizenId: "001085012345",
+      phone: "+84901234501",
+      address: "10 Faculty Lane, Campus",
     },
     {
       lecturerId: "LEC002",
       username: "tranthib",
       email: "tranthib@university.edu",
       fullName: "Tran Thi B",
+      gender: false,
+      birthDate: "1988-07-22",
+      citizenId: "001088076543",
+      phone: "+84901234502",
+      address: "12 Faculty Lane, Campus",
     },
     {
       lecturerId: "LEC003",
       username: "levanc",
       email: "levanc@university.edu",
       fullName: "Le Van C",
+      gender: true,
+      birthDate: "1982-11-08",
+      citizenId: "001082098765",
+      phone: "+84901234503",
+      address: null,
     },
     {
       lecturerId: "LEC004",
       username: "phamthid",
       email: "phamthid@university.edu",
       fullName: "Pham Thi D",
+      gender: false,
+      birthDate: "1990-01-30",
+      citizenId: "001090045678",
+      phone: "+84901234504",
+      address: "14 Faculty Lane, Campus",
     },
     {
       lecturerId: "LEC005",
       username: "hoangvane",
       email: "hoangvane@university.edu",
       fullName: "Hoang Van E",
+      gender: true,
+      birthDate: "1986-09-12",
+      citizenId: "001086056789",
+      phone: "+84901234505",
+      address: null,
     },
   ];
 
@@ -558,18 +589,21 @@ async function main() {
     { start: timeToMinutes(15, 0), end: timeToMinutes(17, 0) },
   ];
 
+  type ScheduleMode = "ONLINE" | "ON_CAMPUS" | "HYBRID";
   const courseOnSemesterRecords: Array<{
     courseId: string;
     semesterId: string;
     lecturerId: string | null;
-    location: string;
+    location: string | null;
+    meetingUrl: string | null;
+    mode: ScheduleMode;
     dayOfWeek: number;
     startTime: number;
     endTime: number;
     capacity: number;
   }> = [];
 
-  for (let semIdx = 0; semIdx < 2; semIdx++) {
+  for (let semIdx = 0; semIdx < 3; semIdx++) {
     const isFall2025 = semIdx === 1;
     courses.forEach((course, courseIdx) => {
       const lecturerIdx = courseIdx % lecturers.length;
@@ -577,13 +611,27 @@ async function main() {
       const dayIdx = Math.floor(courseIdx / timeSlots.length) % 5;
       const slot = timeSlots[slotIdx];
       const noLecturer = isFall2025 && courseIdx < 5;
+      const mode: ScheduleMode =
+        courseIdx % 5 === 0
+          ? "ONLINE"
+          : courseIdx % 5 === 1
+            ? "HYBRID"
+            : "ON_CAMPUS";
+      const meetingUrl =
+        mode === "ONLINE" || mode === "HYBRID"
+          ? `https://meet.example.edu/${course.id.slice(-6)}`
+          : null;
       courseOnSemesterRecords.push({
         courseId: course.id,
         semesterId: semesters[semIdx].id,
         lecturerId: noLecturer ? null : lecturers[lecturerIdx].id,
         location: noLecturer
           ? `Room TBA-${courseIdx + 1}`
-          : `Room ${String.fromCharCode(65 + (courseIdx % 5))}${100 + (courseIdx % 20)}`,
+          : mode === "ON_CAMPUS"
+            ? `Room ${String.fromCharCode(65 + (courseIdx % 5))}${100 + (courseIdx % 20)}`
+            : "Online",
+        meetingUrl,
+        mode,
         dayOfWeek: dayIdx + 1,
         startTime: slot.start,
         endTime: slot.end,
@@ -593,6 +641,7 @@ async function main() {
   }
 
   const fall2025Semester = semesters[1];
+  // const spring2026Semester = semesters[2];
 
   const courseOnSemesters = await Promise.all(
     courseOnSemesterRecords.map((cos) =>
@@ -721,7 +770,7 @@ async function main() {
 
   // ─── 12. Enrollment Sessions ─────────────────────────────────
   const enrollmentSessions = await Promise.all(
-    semesters.slice(0, 2).map((sem, i) =>
+    semesters.slice(0, 3).map((sem, i) =>
       prisma.enrollmentSession.create({
         data: {
           name: `Enrollment ${sem.name}`,
@@ -730,7 +779,7 @@ async function main() {
             sem.startDate.getTime() - 30 * 24 * 60 * 60 * 1000,
           ),
           endDate: new Date(sem.startDate.getTime() - 7 * 24 * 60 * 60 * 1000),
-          isActive: i === 0,
+          isActive: i === 2,
         },
       }),
     ),
@@ -797,6 +846,239 @@ async function main() {
   ]);
   console.log(`Created ${posts.length} posts`);
 
+  // ─── 15. Profile Update Requests ───────────────────────────
+  const profileUpdateRequests = await Promise.all([
+    prisma.profileUpdateRequest.create({
+      data: {
+        userId: students[0].id,
+        role: "student",
+        requestedData: {
+          fullName: "Student CS 001 Updated",
+          phone: "+84900111000",
+        },
+        status: "PENDING",
+      },
+    }),
+    prisma.profileUpdateRequest.create({
+      data: {
+        userId: students[2].id,
+        role: "student",
+        requestedData: { address: "456 New Street, District 2" },
+        status: "APPROVED",
+      },
+    }),
+    prisma.profileUpdateRequest.create({
+      data: {
+        userId: lecturers[1].id,
+        role: "lecturer",
+        requestedData: { fullName: "Dr. Tran Thi B", birthDate: "1988-07-22" },
+        status: "PENDING",
+      },
+    }),
+    prisma.profileUpdateRequest.create({
+      data: {
+        userId: students[5].id,
+        role: "student",
+        requestedData: { citizenId: "001099011111" },
+        status: "REJECTED",
+        rejectionReason: "Citizen ID must be verified by admin.",
+      },
+    }),
+  ]);
+  console.log(
+    `Created ${profileUpdateRequests.length} profile update requests`,
+  );
+
+  // ─── 16. Course Withdrawal Requests ─────────────────────────
+  const enrollmentsForWithdrawal = enrollments
+    .filter((_, i) => i % 5 === 0)
+    .slice(0, 4);
+  const withdrawalStatuses: Array<"PENDING" | "APPROVED" | "REJECTED"> = [
+    "PENDING",
+    "APPROVED",
+    "REJECTED",
+    "PENDING",
+  ];
+  const courseWithdrawalRequests = await Promise.all(
+    enrollmentsForWithdrawal.map((enr, i) =>
+      prisma.courseWithdrawalRequest.create({
+        data: {
+          studentId: enr.studentId,
+          courseOnSemesterId: enr.courseOnSemesterId,
+          enrollmentId: enr.id,
+          reason: i % 2 === 0 ? "schedule" : "workload",
+          details: i === 0 ? "Conflict with part-time job." : null,
+          status: withdrawalStatuses[i],
+          rejectionReason:
+            withdrawalStatuses[i] === "REJECTED"
+              ? "Withdrawal period ended."
+              : null,
+        },
+      }),
+    ),
+  );
+  console.log(
+    `Created ${courseWithdrawalRequests.length} course withdrawal requests`,
+  );
+
+  // ─── 17. Schedule Changes ────────────────────────────────────
+  const cosForScheduleChange = courseOnSemesters.slice(0, 3);
+  const scheduleChanges = await Promise.all(
+    cosForScheduleChange.map((cos) =>
+      prisma.scheduleChange.create({
+        data: {
+          courseOnSemesterId: cos.id,
+          changedBy: "admin",
+          changeType: "SCHEDULE_UPDATE",
+          oldDayOfWeek: cos.dayOfWeek,
+          newDayOfWeek: (cos.dayOfWeek ?? 1) + 1,
+          oldStartTime: cos.startTime,
+          newStartTime: (cos.startTime ?? 480) + 30,
+          oldEndTime: cos.endTime,
+          newEndTime: (cos.endTime ?? 600) + 30,
+          oldLocation: cos.location,
+          newLocation: `${cos.location ?? ""} (updated)`,
+        },
+      }),
+    ),
+  );
+  console.log(`Created ${scheduleChanges.length} schedule changes`);
+
+  // ─── 18. AI Conversations & Messages ────────────────────────
+  const aiConv1 = await prisma.aiConversation.create({
+    data: {
+      studentId: students[0].id,
+      title: "Schedule insights",
+      preset: "schedule_insights",
+    },
+  });
+  await prisma.aiMessage.createMany({
+    data: [
+      {
+        conversationId: aiConv1.id,
+        role: "user",
+        content: "When is my next offline class?",
+      },
+      {
+        conversationId: aiConv1.id,
+        role: "model",
+        content:
+          "Based on your timetable, your next on-campus class is Database Systems on Tuesday 13:00–15:00 in Room B102.",
+      },
+    ],
+  });
+
+  const aiConv2 = await prisma.aiConversation.create({
+    data: {
+      lecturerId: lecturers[0].id,
+      title: "General LMS help",
+      preset: "general",
+    },
+  });
+  await prisma.aiMessage.createMany({
+    data: [
+      {
+        conversationId: aiConv2.id,
+        role: "user",
+        content: "How do I export my course grades?",
+      },
+      {
+        conversationId: aiConv2.id,
+        role: "model",
+        content:
+          "You can export grades from the course detail page using the Export or Download option in the grades section.",
+      },
+    ],
+  });
+  console.log("Created AI conversations and messages");
+
+  // ─── 19. Support Requests ───────────────────────────────────
+  const supportRequests = await Promise.all([
+    prisma.supportRequest.create({
+      data: {
+        name: "Student CS 001",
+        email: students[0].email,
+        role: "student",
+        category: "enrollment",
+        subject: "Cannot enroll in Web Development",
+        message: "I get an error when clicking Enroll for Spring 2026.",
+        userId: students[0].id,
+      },
+    }),
+    prisma.supportRequest.create({
+      data: {
+        name: "Tran Thi B",
+        email: lecturers[1].email,
+        role: "lecturer",
+        category: "schedule",
+        subject: "Room change request",
+        message: "Please move my Tuesday class to Room D201 if available.",
+        userId: lecturers[1].id,
+      },
+    }),
+    prisma.supportRequest.create({
+      data: {
+        name: "Guest User",
+        email: "guest@example.com",
+        role: "other",
+        category: "technical",
+        subject: "Login page not loading",
+        message: "The sign-in page shows a blank screen on Safari.",
+        userId: null,
+      },
+    }),
+    prisma.supportRequest.create({
+      data: {
+        name: "Student BA 026",
+        email: students[students.length - 1].email,
+        role: "student",
+        category: "grades",
+        subject: "Grade appeal",
+        message:
+          "I believe my final grade for Marketing Management should be reviewed.",
+        userId: students[students.length - 1].id,
+      },
+    }),
+  ]);
+  console.log(`Created ${supportRequests.length} support requests`);
+
+  // ─── 20. Webhooks & Webhook Logs ─────────────────────────────
+  const webhook1 = await prisma.webhook.create({
+    data: {
+      url: "https://demo.example.com/webhooks/grades",
+      secret: "whsec_demo_secret_1",
+      isActive: true,
+      studentId: students[0].id,
+    },
+  });
+  const webhook2 = await prisma.webhook.create({
+    data: {
+      url: "https://demo.example.com/webhooks/notifications",
+      isActive: true,
+      lecturerId: lecturers[0].id,
+    },
+  });
+  await prisma.webhookLog.createMany({
+    data: [
+      {
+        webhookId: webhook1.id,
+        event: "grade.updated",
+        payload: { enrollmentId: enrollments[0].id, finalGrade: 8.0 },
+        statusCode: 200,
+        responseBody: "OK",
+        duration: 45,
+      },
+      {
+        webhookId: webhook2.id,
+        event: "notification.created",
+        payload: { title: "Schedule change", type: "WARNING" },
+        statusCode: 200,
+        duration: 32,
+      },
+    ],
+  });
+  console.log("Created webhooks and webhook logs");
+
   // ─── Summary ────────────────────────────────────────────────
   console.log("\nSeed Summary:");
   console.log(`   Admin:                 1`);
@@ -807,12 +1089,16 @@ async function main() {
   console.log(`   Semesters:             ${semesters.length}`);
   console.log(`   CourseOnSemesters:     ${courseOnSemesters.length}`);
   console.log(`   Enrollments:           ${enrollments.length}`);
-  console.log(`   LecturerTeachRequests:  ${teachingRequests.length}`);
+  console.log(`   LecturerTeachRequests: ${teachingRequests.length}`);
   console.log(`   CourseDocuments:       ${courseDocuments.length}`);
   console.log(`   ExamSchedules:         ${examSchedules.length}`);
   console.log(`   EnrollmentSessions:    ${enrollmentSessions.length}`);
   console.log(`   Notifications:         ${notifications.length}`);
   console.log(`   Posts:                 ${posts.length}`);
+  console.log(`   ProfileUpdateRequests: ${profileUpdateRequests.length}`);
+  console.log(`   CourseWithdrawalReqs:  ${courseWithdrawalRequests.length}`);
+  console.log(`   ScheduleChanges:      ${scheduleChanges.length}`);
+  console.log(`   SupportRequests:      ${supportRequests.length}`);
   console.log("\nSeed completed successfully!");
 }
 
