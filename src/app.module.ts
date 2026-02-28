@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AdminModule } from "./admin/admin.module";
+import { AiModule } from "./ai/ai.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
@@ -16,6 +17,7 @@ import { ProfileUpdateRequestModule } from "./profile-update-request/profile-upd
 import { RequestModule } from "./request/request.module";
 import { CourseSemesterModule } from "./semester/course-semester/course-semester.module";
 import { SemesterModule } from "./semester/semester.module";
+import { SupportRequestModule } from "./support-request/support-request.module";
 import { LecturerModule } from "./user-manager/lecturer/lecturer.module";
 import { StudentModule } from "./user-manager/student/student.module";
 import { WebhookModule } from "./webhook/webhook.module";
@@ -23,6 +25,7 @@ import { WebhookModule } from "./webhook/webhook.module";
 @Module({
   imports: [
     AuthModule,
+    AiModule,
     StudentModule,
     LecturerModule,
     AdminModule,
@@ -36,6 +39,7 @@ import { WebhookModule } from "./webhook/webhook.module";
     CourseSemesterModule,
     RequestModule,
     ProfileUpdateRequestModule,
+    SupportRequestModule,
     EventEmitterModule.forRoot({
       wildcard: true,
       delimiter: ".",
