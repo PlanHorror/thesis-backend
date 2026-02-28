@@ -42,46 +42,59 @@ model Admin {
 }
 
 model Student {
-  id           String     @id @default(cuid())
-  department   Department @relation("DepartmentStudents", fields: [departmentId], references: [id])
-  departmentId String
-  email        String     @unique
-  username     String     @unique
-  password     String
-  studentId    String?    @unique
-  fullName     String?
-  gender       Boolean?
-  birthDate    String?
-  citizenId    String?    @unique
-  phone        String?    @unique
-  address      String?
-  avatar       String?
-  active       Boolean    @default(true)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                  String     @id @default(cuid())
+  department          Department @relation("DepartmentStudents", fields: [departmentId], references: [id])
+  departmentId        String
+  email               String     @unique
+  username            String     @unique
+  password            String
+  studentId           String?    @unique
+  fullName            String?
+  gender              Boolean?
+  birthDate           String?
+  citizenId           String?    @unique
+  phone               String?    @unique
+  address             String?
+  avatar              String?
+  active              Boolean    @default(true)
+  lastProfileChangeAt DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  aiConsentAt         DateTime?
+  aiConsentVersion    String?
 
   enrollments              StudentCourseEnrollment[]
   notifications            Notification[]
   webhooks                 Webhook[]
   courseWithdrawalRequests CourseWithdrawalRequest[]
+  aiConversations          AiConversation[]          @relation("StudentAiConversations")
 }
 
 model Lecturer {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  username   String   @unique
-  lecturerId String   @unique
-  password   String
-  fullName   String?
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  username            String    @unique
+  lecturerId          String    @unique
+  password            String
+  fullName            String?
+  gender              Boolean?
+  birthDate           String?
+  citizenId           String?   @unique
+  phone               String?   @unique
+  address             String?
+  active              Boolean   @default(true)
+  lastProfileChangeAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  aiConsentAt         DateTime?
+  aiConsentVersion    String?
 
   departmentHead    Department?               @relation("DepartmentHead")
   courseOnSemesters CourseOnSemester[]
   teachingRequests  LecturerTeachingRequest[]
   notifications     Notification[]
   webhooks          Webhook[]
+  aiConversations   AiConversation[]          @relation("LecturerAiConversations")
 }
 
 model Department {
@@ -369,4 +382,46 @@ model Post {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AiConversation {
+  id         String    @id @default(cuid())
+  studentId  String?
+  student    Student?  @relation("StudentAiConversations", fields: [studentId], references: [id], onDelete: Cascade)
+  lecturerId String?
+  lecturer   Lecturer? @relation("LecturerAiConversations", fields: [lecturerId], references: [id], onDelete: Cascade)
+  title      String    @default("New Chat")
+  preset     String? // "schedule_insights" | "schedule_optimizer" | "general" | null
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  messages AiMessage[]
+
+  @@index([studentId])
+  @@index([lecturerId])
+}
+
+model SupportRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  role      String // student | lecturer | admin | other
+  category  String // login | enrollment | grades | schedule | technical | account | other
+  subject   String
+  message   String   @db.Text
+  userId    String? // optional: if user was logged in
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // "user" | "model"
+  content        String         @db.Text
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
 }
