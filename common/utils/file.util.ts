@@ -1,5 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
-import * as fs from "fs";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 export function generateFileName(file: Express.Multer.File): string {
   const timestamp = Date.now();
@@ -9,10 +10,14 @@ export function generateFileName(file: Express.Multer.File): string {
 
 export async function saveFile(
   file: Express.Multer.File,
-  path: string,
+  targetPath: string,
 ): Promise<void> {
   try {
-    await fs.promises.writeFile(path, file.buffer);
+    // Ensure parent directory exists (e.g. "attachments/")
+    const dir = path.dirname(targetPath);
+    await fs.promises.mkdir(dir, { recursive: true });
+
+    await fs.promises.writeFile(targetPath, file.buffer);
   } catch (error) {
     console.error("Error saving file:", error);
     throw new BadRequestException("Error saving file");
