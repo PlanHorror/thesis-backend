@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import {
   ApiBearerAuth,
@@ -23,6 +23,38 @@ export class ProfileUpdateRequestController {
   constructor(
     private readonly profileUpdateRequestService: ProfileUpdateRequestService,
   ) {}
+
+  @Get("cooldown")
+  @ApiOperation({
+    summary: "Get profile change cooldown status",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Cooldown status",
+    schema: {
+      type: "object",
+      properties: {
+        canUpdateProfile: { type: "boolean" },
+        profileChangeCooldownUntil: {
+          type: "string",
+          format: "date-time",
+          nullable: true,
+        },
+      },
+    },
+  })
+  async getCooldown(@GetUser() user: Student | Lecturer) {
+    const role = "studentId" in user ? "student" : "lecturer";
+    const until =
+      await this.profileUpdateRequestService.getProfileChangeCooldownUntil(
+        user.id,
+        role,
+      );
+    return {
+      canUpdateProfile: !until,
+      profileChangeCooldownUntil: until?.toISOString() ?? null,
+    };
+  }
 
   @Post()
   @ApiOperation({
