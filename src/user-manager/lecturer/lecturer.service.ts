@@ -28,11 +28,12 @@ export class LecturerService {
     try {
       const lecturer = await this.prisma.lecturer.findUnique({
         where: { id },
+        include: { departmentHead: true },
       });
       if (!lecturer) {
         throw new NotFoundException("Lecturer not found");
       }
-      return lecturer;
+      return lecturer as unknown as Lecturer;
     } catch (error) {
       this.logger.error("Failed to retrieve lecturer", error.stack);
       throw new NotFoundException("Lecturer not found");
@@ -185,12 +186,34 @@ export class LecturerService {
     }
   }
 
+  private readonly PROFILE_CHANGE_COOLDOWN_DAYS = 30;
+
   async lecturerUpdateAccount(
     data: LecturerUpdateAccountDto,
     lecturer: Lecturer,
   ) {
     try {
-      const { password, oldPassword, ...updateData } = data;
+      const { password, oldPassword, username, ...updateData } = data;
+      const isChangingCreds =
+        (username !== undefined && username !== lecturer.username) ||
+        (password !== undefined && password !== "");
+
+      if (isChangingCreds) {
+        const current = await this.prisma.lecturer.findUnique({
+          where: { id: lecturer.id },
+          select: { lastProfileChangeAt: true },
+        });
+        if (current?.lastProfileChangeAt) {
+          const until = new Date(current.lastProfileChangeAt);
+          until.setDate(until.getDate() + this.PROFILE_CHANGE_COOLDOWN_DAYS);
+          if (until > new Date()) {
+            throw new BadRequestException(
+              `Profile changes are limited to once every ${this.PROFILE_CHANGE_COOLDOWN_DAYS} days. You can update again after ${until.toISOString()}`,
+            );
+          }
+        }
+      }
+
       let hashedPassword: string | null = null;
       if (password) {
         if (
@@ -202,12 +225,17 @@ export class LecturerService {
         const salt = await bcrypt.genSalt();
         hashedPassword = await bcrypt.hash(password, salt);
       }
+      const updatePayload: Record<string, unknown> = {
+        ...updateData,
+        ...(username !== undefined && { username }),
+        ...(hashedPassword && { password: hashedPassword }),
+      };
+      if (isChangingCreds) {
+        (updatePayload as any).lastProfileChangeAt = new Date();
+      }
       const updatedLecturer = await this.prisma.lecturer.update({
         where: { id: lecturer.id },
-        data: {
-          ...updateData,
-          ...(hashedPassword && { password: hashedPassword }),
-        },
+        data: updatePayload as any,
       });
 
       // Emit event for password changed if password was updated
