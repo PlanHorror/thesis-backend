@@ -12,6 +12,7 @@ import { ProfileUpdateRequestModule } from "src/profile-update-request/profile-u
 import { RequestModule } from "src/request/request.module";
 import { CourseSemesterModule } from "src/semester/course-semester/course-semester.module";
 import { SemesterModule } from "src/semester/semester.module";
+import { SupportRequestModule } from "src/support-request/support-request.module";
 import { LecturerModule } from "src/user-manager/lecturer/lecturer.module";
 import { StudentModule } from "src/user-manager/student/student.module";
 import { WebhookModule } from "src/webhook/webhook.module";
@@ -31,6 +32,7 @@ import { SeedService } from "./seed/seed.service";
 import { CourseSemesterController } from "./semester/course-semester/course-semester.controller";
 import { SemesterController } from "./semester/semester.controller";
 import { StudentController } from "./student/student.controller";
+import { AdminSupportRequestController } from "./support-request/support-request.controller";
 import { WebhookController } from "./webhook/webhook.controller";
 
 @Module({
@@ -38,6 +40,7 @@ import { WebhookController } from "./webhook/webhook.controller";
     AdminController,
     AdminRequestController,
     AdminProfileUpdateRequestController,
+    AdminSupportRequestController,
     LecturerController,
     StudentController,
     DepartmentController,
@@ -69,6 +72,7 @@ import { WebhookController } from "./webhook/webhook.controller";
     PostModule,
     RequestModule,
     ProfileUpdateRequestModule,
+    SupportRequestModule,
   ],
 })
 export class AdminModule {}
