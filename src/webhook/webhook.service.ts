@@ -1,17 +1,21 @@
-import { HttpService } from '@nestjs/axios';
+import { HttpService } from "@nestjs/axios";
 import {
   BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { Notification, Prisma, Webhook, WebhookLog } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { firstValueFrom } from 'rxjs';
+} from "@nestjs/common";
+import { Notification, Prisma, Webhook, WebhookLog } from "@prisma/client";
+import {
+  isDiscordWebhookUrl,
+  notificationToDiscordPayload,
+} from "common/utils/discord-webhook.util";
 import {
   generateWebhookSecret,
   generateWebhookSignature,
-} from 'common/utils/webhook.util';
+} from "common/utils/webhook.util";
+import { firstValueFrom } from "rxjs";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class WebhookService {
@@ -29,12 +33,12 @@ export class WebhookService {
           lecturer: true,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       });
     } catch (error) {
-      this.logger.error('Failed to get all webhooks', error);
-      throw new BadRequestException('Failed to get all webhooks');
+      this.logger.error("Failed to get all webhooks", error);
+      throw new BadRequestException("Failed to get all webhooks");
     }
   }
 
@@ -48,15 +52,15 @@ export class WebhookService {
         },
       });
       if (!webhook) {
-        throw new NotFoundException('Webhook not found');
+        throw new NotFoundException("Webhook not found");
       }
       return webhook;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to get webhook by id', error);
-      throw new BadRequestException('Failed to get webhook by id');
+      this.logger.error("Failed to get webhook by id", error);
+      throw new BadRequestException("Failed to get webhook by id");
     }
   }
 
@@ -67,7 +71,7 @@ export class WebhookService {
     try {
       if (!lecturerId && !studentId) {
         throw new BadRequestException(
-          'Either lecturerId or studentId must be provided',
+          "Either lecturerId or studentId must be provided",
         );
       }
 
@@ -81,15 +85,15 @@ export class WebhookService {
           lecturer: true,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       });
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error('Failed to get webhooks by user', error);
-      throw new BadRequestException('Failed to get webhooks by user');
+      this.logger.error("Failed to get webhooks by user", error);
+      throw new BadRequestException("Failed to get webhooks by user");
     }
   }
 
@@ -109,8 +113,8 @@ export class WebhookService {
         },
       });
     } catch (error) {
-      this.logger.error('Failed to create webhook', error);
-      throw new BadRequestException('Failed to create webhook');
+      this.logger.error("Failed to create webhook", error);
+      throw new BadRequestException("Failed to create webhook");
     }
   }
 
@@ -125,11 +129,11 @@ export class WebhookService {
         },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Webhook not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Webhook not found");
       }
-      this.logger.error('Failed to update webhook', error);
-      throw new BadRequestException('Failed to update webhook');
+      this.logger.error("Failed to update webhook", error);
+      throw new BadRequestException("Failed to update webhook");
     }
   }
 
@@ -139,11 +143,11 @@ export class WebhookService {
         where: { id },
       });
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Webhook not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Webhook not found");
       }
-      this.logger.error('Failed to delete webhook', error);
-      throw new BadRequestException('Failed to delete webhook');
+      this.logger.error("Failed to delete webhook", error);
+      throw new BadRequestException("Failed to delete webhook");
     }
   }
 
@@ -172,7 +176,7 @@ export class WebhookService {
 
       if (!webhook) {
         throw new NotFoundException(
-          'Webhook not found or you are not authorized',
+          "Webhook not found or you are not authorized",
         );
       }
 
@@ -181,8 +185,8 @@ export class WebhookService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to get webhook', error);
-      throw new BadRequestException('Failed to get webhook');
+      this.logger.error("Failed to get webhook", error);
+      throw new BadRequestException("Failed to get webhook");
     }
   }
 
@@ -208,11 +212,11 @@ export class WebhookService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Webhook not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Webhook not found");
       }
-      this.logger.error('Failed to update webhook', error);
-      throw new BadRequestException('Failed to update webhook');
+      this.logger.error("Failed to update webhook", error);
+      throw new BadRequestException("Failed to update webhook");
     }
   }
 
@@ -232,11 +236,11 @@ export class WebhookService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      if (error.code === 'P2025') {
-        throw new NotFoundException('Webhook not found');
+      if (error.code === "P2025") {
+        throw new NotFoundException("Webhook not found");
       }
-      this.logger.error('Failed to delete webhook', error);
-      throw new BadRequestException('Failed to delete webhook');
+      this.logger.error("Failed to delete webhook", error);
+      throw new BadRequestException("Failed to delete webhook");
     }
   }
 
@@ -288,7 +292,7 @@ export class WebhookService {
         for (const webhook of webhooks) {
           const log = await this.sendWebhook(
             webhook,
-            'notification',
+            "notification",
             notification,
           );
           logs.push(log);
@@ -315,21 +319,43 @@ export class WebhookService {
 
     try {
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
-      // Add signature if secret is configured
+      // Add signature if secret is configured (sign original payload for verification)
       if (webhook.secret) {
         const signature = generateWebhookSignature(webhook.secret, payload);
-        headers['X-Webhook-Signature'] = signature;
+        headers["X-Webhook-Signature"] = signature;
       }
 
+      // For Discord webhook URLs, send Discord-formatted payload so messages appear in the channel
+      const bodyToSend =
+        event === "notification" &&
+        isDiscordWebhookUrl(webhook.url) &&
+        typeof payload === "object" &&
+        payload !== null &&
+        "title" in payload &&
+        "message" in payload
+          ? notificationToDiscordPayload(
+              payload as {
+                title: string;
+                message: string;
+                url?: string | null;
+                type?: string;
+                createdAt?: Date | string;
+              },
+            )
+          : payload;
+
       const response = await firstValueFrom(
-        this.httpService.post(webhook.url, payload, { headers }),
+        this.httpService.post(webhook.url, bodyToSend, { headers }),
       );
 
       statusCode = response.status;
-      responseBody = JSON.stringify(response.data);
+      responseBody =
+        response.data != null
+          ? JSON.stringify(response.data)
+          : String(response.status);
     } catch (error) {
       statusCode = error.response?.status || 500;
       responseBody = error.message;
@@ -340,7 +366,7 @@ export class WebhookService {
 
     const duration = Date.now() - startTime;
 
-    // Log the webhook call
+    // Log the webhook call (store original payload for audit)
     return await this.prisma.webhookLog.create({
       data: {
         webhookId: webhook.id,
