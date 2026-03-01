@@ -114,12 +114,15 @@ export class LecturerService {
 
   async createMultipleLecturers(
     data: Prisma.LecturerCreateManyInput[],
-  ): Promise<{ message: string }> {
-    await this.prisma.lecturer.createMany({
+  ): Promise<{ message: string; created: number }> {
+    const result = await this.prisma.lecturer.createMany({
       data,
       skipDuplicates: true,
     });
-    return { message: "Lecturers created successfully" };
+    return {
+      message: "Lecturers created successfully",
+      created: result.count,
+    };
   }
 
   async update(
