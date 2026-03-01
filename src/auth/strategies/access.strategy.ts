@@ -42,18 +42,25 @@ export class AccessStrategy extends PassportStrategy(Strategy, "accessToken") {
           where: { id },
         });
         if (!admin || !admin.active) {
-          throw new UnauthorizedException("Account invalid");
+          throw new UnauthorizedException(
+            "Your session may have expired or your account is inactive. Please sign in again.",
+          );
         }
         return { ...admin, role };
-      } catch {
-        throw new UnauthorizedException("Account invalid");
+      } catch (e) {
+        if (e instanceof UnauthorizedException) throw e;
+        throw new UnauthorizedException(
+          "Your session may have expired or your account is inactive. Please sign in again.",
+        );
       }
     } else if (role === Role.STUDENT && email) {
       const student = await this.prismaService.student.findUnique({
         where: { id, email },
       });
       if (!student || !student.active) {
-        throw new UnauthorizedException("Account invalid");
+        throw new UnauthorizedException(
+          "Your session may have expired or your account is inactive. Please sign in again.",
+        );
       }
       return { ...student, role };
     } else if (role === Role.LECTURER && email) {
@@ -61,7 +68,9 @@ export class AccessStrategy extends PassportStrategy(Strategy, "accessToken") {
         where: { id, email },
       });
       if (!lecturer || !lecturer.active) {
-        throw new UnauthorizedException("Account invalid");
+        throw new UnauthorizedException(
+          "Your session may have expired or your account is inactive. Please sign in again.",
+        );
       }
       return { ...lecturer, role };
     } else {
