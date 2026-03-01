@@ -1,31 +1,31 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Admin, Student, Lecturer } from '@prisma/client';
-import { Role } from 'common';
-import { AccountPayload } from 'common/interface/account.interface';
-import { Request } from 'express';
-import { Strategy } from 'passport-jwt';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { Admin, Lecturer, Student } from "@prisma/client";
+import { Role } from "common";
+import { AccountPayload } from "common/interface/account.interface";
+import { Request } from "express";
+import { Strategy } from "passport-jwt";
+import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
-export class AccessStrategy extends PassportStrategy(Strategy, 'accessToken') {
+export class AccessStrategy extends PassportStrategy(Strategy, "accessToken") {
   constructor(private readonly prismaService: PrismaService) {
     super({
       jwtFromRequest: (req: Request) => {
         let token = null as string | null;
-        if (req && req.headers.cookie) {
-          const cookies = req.headers.cookie.split('; ');
+        if (req?.headers?.cookie) {
+          const cookies = req.headers.cookie.split("; ");
           const accessTokenCookie = cookies.find((cookie) =>
-            cookie.startsWith('accessToken='),
+            cookie.startsWith("accessToken="),
           );
           if (accessTokenCookie) {
-            token = accessTokenCookie.split('=')[1];
+            token = accessTokenCookie.split("=")[1];
           }
         }
         return token;
       },
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'defaultSecret',
+      secretOrKey: process.env.JWT_SECRET || "defaultSecret",
     });
   }
 
@@ -33,7 +33,7 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'accessToken') {
     payload: AccountPayload,
   ): Promise<(Admin | Student | Lecturer) & { role: Role }> {
     if (!payload) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException("Invalid token");
     }
     const { id, email, role } = payload;
     if (role === Role.ADMIN) {
@@ -42,18 +42,18 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'accessToken') {
           where: { id },
         });
         if (!admin || !admin.active) {
-          throw new UnauthorizedException('Account invalid');
+          throw new UnauthorizedException("Account invalid");
         }
         return { ...admin, role };
-      } catch (error) {
-        throw new UnauthorizedException('Account invalid');
+      } catch {
+        throw new UnauthorizedException("Account invalid");
       }
     } else if (role === Role.STUDENT && email) {
       const student = await this.prismaService.student.findUnique({
         where: { id, email },
       });
       if (!student || !student.active) {
-        throw new UnauthorizedException('Account invalid');
+        throw new UnauthorizedException("Account invalid");
       }
       return { ...student, role };
     } else if (role === Role.LECTURER && email) {
@@ -61,11 +61,11 @@ export class AccessStrategy extends PassportStrategy(Strategy, 'accessToken') {
         where: { id, email },
       });
       if (!lecturer || !lecturer.active) {
-        throw new UnauthorizedException('Account invalid');
+        throw new UnauthorizedException("Account invalid");
       }
       return { ...lecturer, role };
     } else {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException("Invalid token");
     }
   }
 }
