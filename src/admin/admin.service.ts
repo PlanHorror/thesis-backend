@@ -365,10 +365,14 @@ export class AdminService {
 
   async createMultipleLecturerAccountsService(
     data: CreateMultipleLecturersDto,
-  ): Promise<{ message: string }> {
+  ): Promise<{ message: string; created: number }> {
     return await this.lecturerService.createMultipleLecturers(
       data.lecturers.map((lecturer) => {
-        const { password, ...lecturerData } = lecturer;
+        const { password, ...rest } = lecturer;
+        const { departmentHeadId: _dropped, ...lecturerData } =
+          rest as typeof rest & {
+            departmentHeadId?: string;
+          };
         return {
           ...lecturerData,
           password: bcrypt.hashSync(password, bcrypt.genSaltSync()),
