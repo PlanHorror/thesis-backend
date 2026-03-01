@@ -4,23 +4,23 @@
 export const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080/api';
 
 // Test user credentials — update these to match real users in your DB
-export const STUDENT_CREDENTIALS = {
-  studentId: __ENV.STUDENT_ID || 'STU-CS-003',
-  password: __ENV.STUDENT_PASSWORD || 'student123',
-};
 // export const STUDENT_CREDENTIALS = {
-//   studentId: __ENV.STUDENT_ID || 'STU-2026-009',
-//   password: __ENV.STUDENT_PASSWORD || 'SecurePass123!',
+//   studentId: __ENV.STUDENT_ID || 'STU-CS-003',
+//   password: __ENV.STUDENT_PASSWORD || 'student123',
 // };
-
-export const LECTURER_CREDENTIALS = {
-  lecturerId: __ENV.LECTURER_ID || 'LEC-001',
-  password: __ENV.LECTURER_PASSWORD || 'lecturer123',
+export const STUDENT_CREDENTIALS = {
+  studentId: __ENV.STUDENT_ID || 'STU-2026-009',
+  password: __ENV.STUDENT_PASSWORD || 'SecurePass123!',
 };
+
 // export const LECTURER_CREDENTIALS = {
 //   lecturerId: __ENV.LECTURER_ID || 'LEC-001',
-//   password: __ENV.LECTURER_PASSWORD || 'SecurePass123!',
+//   password: __ENV.LECTURER_PASSWORD || 'lecturer123',
 // };
+export const LECTURER_CREDENTIALS = {
+  lecturerId: __ENV.LECTURER_ID || 'LEC-001',
+  password: __ENV.LECTURER_PASSWORD || 'SecurePass123!',
+};
 
 // Thresholds (pass/fail criteria)
 export const THRESHOLDS = {

@@ -9,4 +9,4 @@ data:
   NODE_ENV: 'production'
   PORT: '3000'
   # Frontend URL for CORS - update with your actual frontend URL
-  FRONTEND_URL: 'http://localhost:3001'
+  FRONTEND_URL: 'https://www.learning-system-management.online'

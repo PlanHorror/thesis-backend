@@ -10,16 +10,15 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/healthcheck-path: /api
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
 
     # WebSocket & Sticky Sessions for Socket.IO
-    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600,deregistration_delay.timeout_seconds=30
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
-    # Uncomment for HTTPS (requires ACM certificate ARN)
-    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:ACCOUNT:certificate/CERT-ID
-    # alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # HTTPS with ACM certificate
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:908027407880:certificate/504443ea-a6dd-45f5-a3f9-c4b3932c9b2d
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
 spec:
   ingressClassName: alb
   rules:
