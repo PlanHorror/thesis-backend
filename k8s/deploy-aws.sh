@@ -135,7 +135,8 @@ rm -f "$TEMP_DEPLOY"
 echo "⏳ Waiting for ALB to be ready..."
 sleep 10
 for i in $(seq 1 12); do
-    ALB_HOSTNAME=$(kubectl get ingress app-ingress -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+    # ingress name is `app-ingress` in this repo
+    ALB_HOSTNAME=$(kubectl get ingress backend-ingress -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
     if [ -n "$ALB_HOSTNAME" ] && [ "$ALB_HOSTNAME" != "" ]; then
         break
     fi
@@ -144,7 +145,7 @@ for i in $(seq 1 12); do
 done
 
 if [ -z "$ALB_HOSTNAME" ]; then
-    ALB_HOSTNAME="(pending - check: kubectl get ingress app-ingress -n $NAMESPACE)"
+    ALB_HOSTNAME="(pending - check: kubectl get ingress backend-ingress -n $NAMESPACE)"
 fi
 
 echo ""
