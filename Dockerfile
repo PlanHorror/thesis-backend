@@ -36,11 +36,12 @@ RUN apk add --no-cache openssl
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001
 
-# Copy package files
+# Copy package files and node_modules from builder, then prune dev dependencies
 COPY package.json yarn.lock ./
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install only production dependencies
-RUN yarn install --frozen-lockfile --production && \
+# Remove devDependencies to reduce image size
+RUN yarn install --production --ignore-scripts --prefer-offline && \
     yarn cache clean
 
 # Copy built application from builder stage
@@ -60,7 +61,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api || exit 1
 
 # Start the application with migrations
 CMD ["sh", "-c", "yarn db:migrate && node dist/src/main.js"]
