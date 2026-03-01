@@ -19,7 +19,13 @@ export class SeedService {
     // Clean up existing data (in reverse dependency order)
     await this.prisma.webhookLog.deleteMany();
     await this.prisma.webhook.deleteMany();
+    await this.prisma.aiMessage.deleteMany();
+    await this.prisma.aiConversation.deleteMany();
     await this.prisma.notification.deleteMany();
+    await this.prisma.supportRequest.deleteMany();
+    await this.prisma.profileUpdateRequest.deleteMany();
+    await this.prisma.scheduleChange.deleteMany();
+    await this.prisma.courseWithdrawalRequest.deleteMany();
     await this.prisma.examSchedule.deleteMany();
     await this.prisma.courseDocument.deleteMany();
     await this.prisma.studentCourseEnrollment.deleteMany();
